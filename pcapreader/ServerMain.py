@@ -2,7 +2,6 @@ from Server import *
 
 
 def main():
-    print("test add")
     server = Server(HOST, PORT)
     ret_val = server.handle_server()
     if ret_val:

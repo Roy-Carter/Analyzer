@@ -54,7 +54,7 @@ class Server:
                        # The fields of the graph
                        labels=pie_labels,
                        # two points after the decimal
-                       autopct='%1.2f',
+                       autopct='%1.2f%%',
                        startangle=90,
                        # colors for the graph
                        colors=my_colors
