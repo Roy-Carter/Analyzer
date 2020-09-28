@@ -1,5 +1,6 @@
 #include "client.h"
 
+
 SOCKET open_socket(int, char*);
 bool search_proto_in_file(char*, char*);
 int find_char(char*, char);
