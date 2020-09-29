@@ -82,15 +82,18 @@ class Server:
         ret_val = False
         try:
             lua_f = open(LUA_NAME, "rb")
-            lines = lua_f.readlines()
             c_line = 0
-            for line in lines:
-                line = line.decode('utf-8')
-                # needs to add all the other ifs for the types
-                if line.find("uint8") > 0:
-                    self.protocol_fields[c_line] = 2
-                elif line.find("uint16") > 0:
-                    self.protocol_fields[c_line] = 4
+            for line in lua_f:
+                line_values = line.split()
+                dict_list = [line_values[0].decode()]
+                size = line_values[1].decode()
+                if size == 'uint8':
+                    dict_list.append(2)
+                elif size == 'uint16':
+                    dict_list.append(4)
+                else:
+                    continue
+                self.protocol_fields[c_line] = dict_list
                 c_line += 1
             self.print_dict()
             lua_f.close()
@@ -143,13 +146,14 @@ class Server:
         if there was a failed type , flag , seq or pdu.
         """
         pkt = binascii.hexlify(pkt)
+        pkt = pkt.decode()
         offset = 0
-        p_type = pkt[offset:offset + self.protocol_fields[0]]
+        p_type = pkt[offset:offset + self.protocol_fields[0][1]]
         print(SEP)
-        if p_type.find(b'01') >= 0:
+        if p_type.find('01') >= 0:
             print("Checking request..")
             ret_val = self.check_request(pkt)
-        elif p_type.find(b'02') >= 0:
+        elif p_type.find('02') >= 0:
             print("Checking response..")
             ret_val = self.check_response(pkt)
         else:
@@ -160,28 +164,28 @@ class Server:
     def check_request(self, hex_pkt):
         """
         This function check if the pkt of request type is correct
-        :param hex_pkt: the TCP payload as a hexadecimal string
+        :param hex_pkt: the TCP payload as a decoded hexadecimal string
         :return:Returns True whether the REQUEST type packet is correct
         and False if there was a fail at the flag,seq,pdu
         """
         ret_val = True
         offset = 0
-        offset += self.protocol_fields[0]
-        flag = hex_pkt[offset:offset + self.protocol_fields[1]]
-        if flag.find(b'01') < 0 and flag.find(b'02') < 0:
+        offset += self.protocol_fields[0][1]
+        flag = hex_pkt[offset:offset + self.protocol_fields[1][1]]
+        if flag.find('01') < 0 and flag.find('02') < 0:
             print(FLAG_ERROR)
             ret_val = False
-        offset += self.protocol_fields[1]
+        offset += self.protocol_fields[1][1]
 
-        seq = hex_pkt[offset:offset + self.protocol_fields[2]]
-        if seq.find(b'03') < 0:
+        seq = hex_pkt[offset:offset + self.protocol_fields[2][1]]
+        if seq.find('03') < 0:
             ret_val = False
             print(SEQ_ERROR)
-        offset += self.protocol_fields[2]
+        offset += self.protocol_fields[2][1]
 
-        pdu = hex_pkt[offset:offset + self.protocol_fields[3]]
-        offset += self.protocol_fields[3]
-        if pdu.find(b'0101') < 0:
+        pdu = hex_pkt[offset:offset + self.protocol_fields[3][1]]
+        offset += self.protocol_fields[3][1]
+        if pdu.find('0101') < 0:
             print(PDU_ERROR)
             ret_val = False
         if ret_val:
@@ -193,28 +197,28 @@ class Server:
     def check_response(self, hex_pkt):
         """
         This function check if the pkt of request type is correct
-        :param hex_pkt: the TCP payload as a hexadecimal string
+        :param hex_pkt: the TCP payload as a decoded  hexadecimal string
         :return:Returns True whether the RESPONSE type packet is correct
         and False if there was a fail at the flag,seq,pdu
         """
         ret_val = True
         offset = 0
-        offset += self.protocol_fields[0]
-        flag = hex_pkt[offset:offset + self.protocol_fields[1]]
-        if flag.find(b'01') < 0 and flag.find(b'02') < 0:
+        offset += self.protocol_fields[0][1]
+        flag = hex_pkt[offset:offset + self.protocol_fields[1][1]]
+        if flag.find('01') < 0 and flag.find('02') < 0:
             print(FLAG_ERROR)
             ret_val = False
-        offset += self.protocol_fields[1]
+        offset += self.protocol_fields[1][1]
 
-        seq = hex_pkt[offset:offset + self.protocol_fields[2]]
-        if seq.find(b'03') < 0:
+        seq = hex_pkt[offset:offset + self.protocol_fields[2][1]]
+        if seq.find('03') < 0:
             ret_val = False
             print(SEQ_ERROR)
-        offset += self.protocol_fields[2]
+        offset += self.protocol_fields[2][1]
 
-        pdu = hex_pkt[offset:offset + self.protocol_fields[4]]
-        offset += self.protocol_fields[4]
-        if pdu.find(b'0202') < 0:
+        pdu = hex_pkt[offset:offset + self.protocol_fields[4][1]]
+        offset += self.protocol_fields[4][1]
+        if pdu.find('0202') < 0:
             print(PDU_ERROR)
             ret_val = False
         if ret_val:
@@ -270,6 +274,3 @@ class Server:
             ret_val = self.parse_pcap()
         conn.close()
         return ret_val
-
-
-

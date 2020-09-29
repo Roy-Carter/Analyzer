@@ -1,33 +1,25 @@
-import matplotlib.pyplot as plotter
-packets = 10
-request = 6
-response = 4
+protocol_fields = {}
+lua_f = open("descriptor.lua", "rb")
+c_line = 0
+
+for line in lua_f:
+    line_values = line.split()
+    dict_list = [line_values[0].decode()]
+    size = line_values[1].decode()
+    if size == 'uint8':
+        dict_list.append(2)
+    elif size == 'uint16':
+        dict_list.append(4)
+    else:
+        continue
+    protocol_fields[c_line] = dict_list
+    c_line += 1
 
 
-def create_graph():
-    pieLabels = 'Request', 'Response'
-    populationShare = [(request/packets)*100, (response/packets)*100]
-    my_colors = ['lightgreen', 'lightblue']
-    figureObject, axesObject = plotter.subplots()
-    axesObject.set_title('Packets Received')
-    axesObject.pie(populationShare,
-                   # The fields of the graph
-                   labels=pieLabels,
-                   # two points after the decimal
-                   autopct='%1.2f',
-                   startangle=90,
-                   # colors for the graph
-                   colors=my_colors
-                   )
+for key, value in protocol_fields.items():
+    print(key, ' : ', value)
+lua_f.close()
 
-    # Aspect ratio - equal means pie is a circle
-    axesObject.axis('equal')
-    plotter.show()
+print(protocol_fields[0][1])
+ret_val = True
 
-
-def main():
-    create_graph()
-
-
-if __name__ == '__main__':
-    main()
