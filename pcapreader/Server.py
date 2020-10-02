@@ -3,7 +3,7 @@ from scapy.all import *
 import matplotlib.pyplot as plotter
 import binascii
 
-#MAGIC STRINGS
+# MAGIC STRINGS
 BUFFER = 4096
 LISTENERS = 1
 LONG = 4
@@ -51,14 +51,14 @@ class Server:
         axes_object.set_title('Packets Received')
         # Draw the pie chart
         axes_object.pie(population_share,
-                       # The fields of the graph
-                       labels=pie_labels,
-                       # two points after the decimal
-                       autopct='%1.2f%%',
-                       startangle=90,
-                       # colors for the graph
-                       colors=my_colors
-                       )
+                        # The fields of the graph
+                        labels=pie_labels,
+                        # two points after the decimal
+                        autopct='%1.2f%%',
+                        startangle=90,
+                        # colors for the graph
+                        colors=my_colors
+                        )
         # Aspect ratio - equal means pie is a circle
         axes_object.axis('equal')
         plotter.show()
