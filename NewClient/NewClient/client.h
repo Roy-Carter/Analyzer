@@ -14,10 +14,6 @@
 #define FILE_NAME "test.lua"
 
 
-typedef struct roy_protocol {
-	uint8_t type;
-	uint8_t seq;
-	uint8_t flag;
-}roy_hdr;
+
 
 
