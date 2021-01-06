@@ -189,7 +189,7 @@ bool search_proto_in_file(char* fname, char* str)
 		retval = false;
 		printf("fp failed to open in search_proto_in_file\n");
 	}
-	FILE* lua_descriptor = fopen(NEW_FILE_NAME, "wb");//write to file
+	FILE* lua_descriptor = fopen(NEW_FILE_NAME, "w");//write to file
 	if (lua_descriptor == NULL)
 	{
 		retval = false;
@@ -201,7 +201,6 @@ bool search_proto_in_file(char* fname, char* str)
 	int first_closer_index;
 	int equal_index;
 
-	
 	if (retval)
 	{
 		while (fgets(temp, SIZE, fp) != NULL)
@@ -231,8 +230,16 @@ bool search_proto_in_file(char* fname, char* str)
 				printf("str_size = %s\n", line->str_size);
 				
 				line->name[equal_index - first_point_index - 1] = '\0';
-				fwrite(line->name,strlen(line->name),1,lua_descriptor);
-				fwrite(line->str_size, strlen(line->str_size), 1, lua_descriptor);
+
+				fprintf(lua_descriptor, "%s", line->name);
+				fprintf(lua_descriptor, "%s", line->str_size);
+				fprintf(lua_descriptor, "%s", " ");
+				fprintf(lua_descriptor, "%d", line->opcode);
+				//fwrite(line->name,strlen(line->name),1,lua_descriptor);
+				//fwrite(line->str_size, strlen(line->str_size), 1, lua_descriptor);
+			
+
+				
 				fwrite("\n", 1, 1, lua_descriptor);
 
 				free(line->name);
