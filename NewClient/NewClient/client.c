@@ -1,6 +1,4 @@
 #include "client.h"
-
-
 SOCKET open_socket(int, char*);
 bool search_proto_in_file(char*, char*);
 int find_char(char*, char);
@@ -8,6 +6,12 @@ bool handle_client(char*, char*, SOCKET);
 bool send_file_length(SOCKET, long*, int);
 bool convert_size(SOCKET, long);
 bool send_file(SOCKET, FILE*);
+void remove_spaces(char*);
+char* decisive_parameter(char*);
+int search_opcode(char*);
+bool search_fields_for_opcode(FILE *, char *);
+void *memmem(const void *, size_t, const void * const, const size_t);
+
 
 /*
 ============================================
@@ -29,6 +33,143 @@ int find_char(char* str, char c)
 }
 /*
 ============================================
+General : This function purpose is to find the parameter that determines 
+how the protocol is split.
+Parameters : *fp - the lua dissector file.
+			 
+Return Value : returns the name of the decisive parameter of the protocol.
+============================================
+*/
+char* decisive_parameter(char * fname)
+{
+	FILE* fp = fopen(FILE_NAME, "rb");//read from file
+	if (fp == NULL)
+	{
+		printf("fp failed to open in decisive_parameter\n");
+	}
+	char temp[SIZE];
+	int equal_index;
+	int first_closer;
+	int second_closer;
+	char *decisive_opcode = malloc(sizeof(char));
+	while (fgets(temp, SIZE, fp) != NULL)
+	{
+		if (strstr(temp, "cols['info']") != NULL)
+		{
+			remove_spaces(temp);
+			equal_index = find_char(temp, '=');
+			first_closer = find_char(temp + equal_index, '[') + equal_index;
+			second_closer = find_char(temp + equal_index, ']') + equal_index;
+			decisive_opcode = realloc(decisive_opcode,sizeof(char) *(second_closer - first_closer - 1));
+			strncpy(decisive_opcode, temp + first_closer + 1, second_closer - first_closer - 1);
+			decisive_opcode[second_closer - first_closer - 1] = '\0';
+		}
+	}
+	return decisive_opcode;
+}
+
+/*
+============================================
+General : The function is responsible of removing the spaces from a certain string
+Parameters : *input - an input string to the function to remove spaces from
+Return Value : None.
+============================================
+*/
+void remove_spaces(char* input)
+{
+	while (*input == '\t' || *input == ' ')
+	{
+		*input = *input + 1;
+	}
+}
+
+/*
+============================================
+General : function finds the start of the first occurrence of
+		  the substring needle of length needlelen in the memory area
+	      haystack of length haystacklen.
+	      the problem is that it searches for the full row , looking for spaces
+Parameters : 
+Return Value : 
+============================================
+*/
+void *memmem(const void *haystack, size_t haystack_len, const void * const needle, const size_t needle_len)
+{
+	if (haystack == NULL) return NULL; // or assert(haystack != NULL);
+	if (haystack_len == 0) return NULL;
+	if (needle == NULL) return NULL; // or assert(needle != NULL);
+	if (needle_len == 0) return NULL;
+
+	for (const char *h = haystack; haystack_len >= needle_len; ++h, --haystack_len)
+	{
+		if (!memcmp(h, needle, needle_len))
+		{
+			return h;
+		}
+	}
+	return NULL;
+}
+
+/*
+============================================
+General :
+Parameters :
+Return Value :
+============================================
+*/
+bool search_fields_for_opcode(FILE *fp , char * lua_name)
+{
+	char temp[BUFFER_SIZE];
+	while (fgets(temp, SIZE, fp) != NULL && !(strstr(temp, "end")))
+	{
+		if (strstr(temp,"add") != NULL && memmem(temp, strlen(temp), lua_name, strlen(lua_name)) != NULL)
+		{
+			printf("fields of specific protocol id --> %s \n", lua_name);
+			return true;
+		}
+	}
+	return false;
+}
+
+int search_opcode(char * lua_line_name)
+{
+	bool retval = true;
+	int num = 0;
+	FILE* fp = fopen(FILE_NAME, "rb");//read from file
+	if (fp == NULL)
+	{
+		retval = false;
+		printf("fp failed to open in search_opcode\n");
+	}
+	int first_after, equal_index, i,second;
+	if (retval)
+	{
+		char* des = decisive_parameter(FILE_NAME); //p_type
+		char temp[BUFFER_SIZE];
+		while (fgets(temp, SIZE, fp) != NULL)
+		{
+			if (strstr(temp, des) != NULL && strstr(temp, "if"))
+			{
+				if (search_fields_for_opcode(fp, lua_line_name))//if its within this part of the code
+				{
+					equal_index = find_char(temp, '=') + 1;
+					first_after = find_char(temp + equal_index, ' ') + equal_index;
+					second = find_char(temp + first_after + 1, ' ') + (first_after+1);// +1 to jump to the next space
+					char * str_to_num = malloc(sizeof(char)*(second - first_after));
+					strncpy(str_to_num, temp + first_after, second - first_after);
+					num = atoi(str_to_num);
+					return num;
+				}
+			}
+		}
+	}
+	fclose(fp);
+	return num;
+}
+
+
+/*
+============================================
 General : searches for the fields in the lua file
 and writes it to a new file
 Parameters : *fname - pointer to the file name
@@ -48,8 +189,8 @@ bool search_proto_in_file(char* fname, char* str)
 		retval = false;
 		printf("fp failed to open in search_proto_in_file\n");
 	}
-	FILE* f = fopen(NEW_FILE_NAME, "wb");//write to file
-	if (f == NULL)
+	FILE* lua_descriptor = fopen(NEW_FILE_NAME, "wb");//write to file
+	if (lua_descriptor == NULL)
 	{
 		retval = false;
 		printf("f failed to open in search_proto_in_file\n");
@@ -59,10 +200,13 @@ bool search_proto_in_file(char* fname, char* str)
 	int second_point_index;
 	int first_closer_index;
 	int equal_index;
+
+	
 	if (retval)
 	{
 		while (fgets(temp, SIZE, fp) != NULL)
 		{
+			struct lua_line *line = malloc(sizeof(struct lua_line));
 
 			if (strstr(temp, str) != NULL)
 			{
@@ -72,15 +216,33 @@ bool search_proto_in_file(char* fname, char* str)
 				second_point_index = find_char(temp + equal_index, '.');
 				second_point_index += equal_index;
 
-				// + 1 to not copy the position itself , -1 for not copying one letter afterwards
-				fwrite(temp + first_point_index + 1, equal_index - first_point_index - 1, 1, f);
-				fwrite(temp + second_point_index + 1, first_closer_index - second_point_index - 1, 1, f);
-				puts(temp);
-				fwrite("\n", 1, 1, f);
+				line->name = malloc(sizeof(char)* equal_index - first_point_index + 1);//+1 for a pointer , otherwise , unknown crt behaviour
+				strncpy(line->name, temp + first_point_index + 1, equal_index - first_point_index - 1);
+				line->name[equal_index - first_point_index-1] = '\0';
+				
+				line->str_size = malloc(sizeof(char)* first_closer_index - second_point_index + 1);
+				strncpy(line->str_size, temp + second_point_index + 1, first_closer_index - second_point_index - 1);
+				line->str_size[first_closer_index - second_point_index -1] = '\0';
+				
+
+				line->opcode = search_opcode(line->name);
+				printf("line name = %s\n", line->name);
+				printf("line opcode = %d\n", line->opcode);
+				printf("str_size = %s\n", line->str_size);
+				
+				line->name[equal_index - first_point_index - 1] = '\0';
+				fwrite(line->name,strlen(line->name),1,lua_descriptor);
+				fwrite(line->str_size, strlen(line->str_size), 1, lua_descriptor);
+				fwrite("\n", 1, 1, lua_descriptor);
+
+				free(line->name);
+				free(line->str_size);
+				
 			}
+			free(line);
 		}
 		fclose(fp);
-		fclose(f);
+		fclose(lua_descriptor);
 	}
 	return retval;
 }
@@ -235,7 +397,7 @@ bool handle_client(char* userInput, char* buf, SOCKET sock)
 	0x01, 0x01, 0x03, 0x01,0x01, 0};//working 1
 
 	char packet2[] = { /* Packet 2 */
-	0x02, 0x01, 0x03, 0x02,0x02 , 0 };//working 2
+	0x02, 0x01, 0x03, 0x02,0x03,0x02 , 0 };//working 2
 
 	char packet3[] = { /* Packet 3 */
 	0x01, 0x05, 0x04, 0x05,0x04, 0 };//incorrect

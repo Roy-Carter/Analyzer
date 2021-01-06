@@ -1,6 +1,8 @@
 #define _CRT_SECURE_NO_WARNINGS
+#define _CRT_NONSTDC_NO_DEPRECATE
 #include <stdio.h>
 #include<stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include <WS2tcpip.h>
@@ -14,6 +16,10 @@
 #define FILE_NAME "test.lua"
 
 
-
+struct lua_line{
+	char * name;
+	char * str_size;
+	int opcode;
+};
 
 
