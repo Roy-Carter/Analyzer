@@ -14,12 +14,15 @@
 #define INPUT_LEN 60
 #define NEW_FILE_NAME "new.lua"
 #define FILE_NAME "test.lua"
+#define SPACE_VAL ' '
+#define EQUAL_VAL '='
+#define POINT_VAL '.'
+#define END_LINE_VAL '\0'
 
-
-struct lua_line{
+typedef struct lua_line{
 	char * name;
 	char * str_size;
 	int opcode;
-};
+}lua_line;
 
 
