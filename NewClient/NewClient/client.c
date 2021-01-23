@@ -14,6 +14,7 @@ char *search_sized_substr(char*, int, char*, int);
 int detect_opcode_number(char*);
 void update_descriptor(FILE*, lua_line*);
 void write_to_file(FILE*, lua_line*);
+bool update_line(lua_line *, FILE *, char *, int, int, int, int);
 
 /*
 ============================================
@@ -26,9 +27,9 @@ Return Value : None.
 void update_descriptor(FILE *lua_descriptor, lua_line *line)
 {
 	write_to_file(lua_descriptor, line);
-	printf("line name = %s\n", line->name);
-	printf("line opcode = %d\n", line->opcode);
-	printf("str_size = %s\n", line->str_size);
+	VAL_PRINT(line->name,s);
+	VAL_PRINT(line->opcode,d);
+	VAL_PRINT(line->str_size,s);
 }
 /*
 ============================================
@@ -47,6 +48,7 @@ int find_char(char* str, char c)
 	}
 	return index;
 }
+
 /*
 ============================================
 General : This function purpose is to find the parameter that determines 
@@ -58,23 +60,24 @@ Return Value : returns the name of the decisive parameter of the protocol.
 */
 char* decisive_parameter(char * fname)
 {
-	FILE* fp = fopen(FILE_NAME, "rb");//read from file
-	if (fp == NULL){ printf("fp failed to open in decisive_parameter\n");}
+	FILE* fp = fopen(FILE_NAME, "r");//read from file
+	if (fp == NULL) { OPEN_FAILED(fp, decisive_parameter); }
 	char data[SIZE];
-	int equal_index,  first_closer, second_closer;
-	char *decisive_opcode = malloc(sizeof(char));
 	bool flag = true;
+	int equal_index,  first_sqr_bracket, second_sqr_bracket;
+	char *decisive_opcode = malloc(sizeof(char));
 	if (decisive_opcode){
 		while (fgets(data, SIZE, fp) != NULL && flag){
 			if (strstr(data, "cols['info']") != NULL){
 				remove_spaces(data);
 				equal_index = find_char(data, EQUAL_VAL);
-				first_closer = find_char(data + equal_index, '[') + equal_index;
-				second_closer = find_char(data + equal_index, ']') + equal_index;
-				decisive_opcode = realloc(decisive_opcode, sizeof(char) *(second_closer - first_closer - 1));
+				first_sqr_bracket = find_char(data + equal_index, '[') + equal_index;
+				second_sqr_bracket = find_char(data + equal_index, ']') + equal_index;
+				decisive_opcode = realloc(decisive_opcode, sizeof(char) * SUB_AND_DEC(second_sqr_bracket,first_sqr_bracket));
 				if (decisive_opcode == NULL) { flag = false; }
-				strncpy(decisive_opcode, data + first_closer + 1, second_closer - first_closer - 1);
-				decisive_opcode[second_closer - first_closer - 1] = END_LINE_VAL;
+				strncpy(decisive_opcode, ADD_AND_INC(data,first_sqr_bracket), SUB_AND_DEC(second_sqr_bracket,first_sqr_bracket));
+				decisive_opcode[second_sqr_bracket - first_sqr_bracket - 1] = END_LINE_VAL;
+				flag = false; // cols info shows only one time;
 			}
 		}
 	}
@@ -90,8 +93,10 @@ Return Value : None.
 */
 void remove_spaces(char* input)
 {
-	while (*input == '\t' || *input == ' '){
-		*input += 1;
+	if (input) {
+		while (*input == '\t' || *input == ' ') {
+			*input += 1;
+		}
 	}
 }
 
@@ -106,7 +111,7 @@ Parameters : *search_in - the string to search in .
 			 *search_for - the string to search for.
 			 search_for_len - the length of the string to search for.
 Return Value : Returns a pointer to the start of the first occurrence of the substring.
-============================================
+============================================ 
 */
 char *search_sized_substr(char *search_in, int search_in_len,char *search_for,int search_for_len)
 {
@@ -136,9 +141,9 @@ return false.
 bool search_fields_for_opcode(FILE *fp , char * line_name)
 {
 	bool retval = false;
-	char temp[BUFFER_SIZE];
-	while (!retval && fgets(temp, SIZE, fp) != NULL && !(strstr(temp, "end"))){
-		if (strstr(temp,"add") != NULL && search_sized_substr(temp, strlen(temp), line_name, strlen(line_name)) != NULL){//memmem needed because of the \0 (for example p_type\0)
+	char data[SIZE];
+	while (!retval && fgets(data, SIZE, fp) != NULL && !(strstr(data, "end"))){
+		if (strstr(data,"add") != NULL && search_sized_substr(data, strlen(data), line_name, strlen(line_name)) != NULL){//memmem needed because of the \0 (for example p_type\0)
 			retval = true;
 		}
 	}
@@ -156,9 +161,9 @@ int detect_opcode_number(char * data)
 {
 	int first_after, equal_index, i, second , num;
 	char * str_to_num;
-	equal_index = find_char(data, EQUAL_VAL) + 1;
+	equal_index = INC(find_char(data, EQUAL_VAL));
 	first_after = find_char(data + equal_index, SPACE_VAL) + equal_index;
-	second = find_char(data + first_after + 1, SPACE_VAL) + (first_after + 1);// +1 to jump to the next space
+	second = find_char(ADD_AND_INC(data,first_after), SPACE_VAL) + INC(first_after);// +1 to jump to the next space
 	str_to_num = malloc(sizeof(char)*(second - first_after));
 	if (str_to_num == NULL) { num = -1; }
 	else{
@@ -182,14 +187,14 @@ Return Value : returns the opcode if it found one , otherwise returns 0 if its a
 int search_opcode(char * lua_line_name)
 {
 	int num = 0;
-	FILE* fp = fopen(FILE_NAME, "rb");//read from file
+	FILE* fp = fopen(FILE_NAME, "r");//read from file
 	if (fp == NULL){
 		num = -1;
-		printf("fp failed to open in search_opcode\n");
+		OPEN_FAILED(fp, search_opcode);
 	}
 	if (num != -1){
 		char* decisive = decisive_parameter(FILE_NAME); //p_type
-		char data[BUFFER_SIZE];
+		char data[SIZE];
 		while (fgets(data, SIZE, fp) != NULL){
 			if (strstr(data, decisive) != NULL && strstr(data, "if")){
 				if (search_fields_for_opcode(fp, lua_line_name)){//if its within this part of the code
@@ -214,16 +219,49 @@ Return Value : None.
 */
 void write_to_file(FILE* lua_descriptor, lua_line *line)
 {
-	fprintf(lua_descriptor, "%s", line->name);
-	fprintf(lua_descriptor, "%s", line->str_size);
-	fprintf(lua_descriptor, "%s", " ");
-	fprintf(lua_descriptor, "%d", line->opcode);
-	fwrite("\n", 1, 1, lua_descriptor);
+	WRITE_F(lua_descriptor,s, line->name);
+	WRITE_F(lua_descriptor,s, line->str_size);
+	WRITE_F(lua_descriptor,c, SPACE_VAL);
+	WRITE_F(lua_descriptor,d, line->opcode);
+	WRITE_F(lua_descriptor,s, "\n");
 }
 
 /*
-FIX THIS FUNCTION
-NEEDS TO BE  SPLIT INTO FUNCTIONS
+============================================
+General : This function updates the values of a specific line struct
+Parameters : *line - the lua line struct to update.
+			 *lua_descriptor - the descriptor file to update in.
+			 *row_data - a pointer to the row data that was read from the file.
+			 first_point_index - the index of the first point in a parameter line.
+			 second_point_index - the index of the second point in a parameter line.
+			 first_parenthesis_index - the first parenthesis index in the parameter line.
+			 equal_index - the index of the "=" character in the parameter line.
+Return Value : returns true if the update was done , otherwise returns false if the mallocs weren't successful.
+============================================
+
+*/
+bool update_line(lua_line * line , FILE *lua_descriptor, char *row_data,int first_point_index, int second_point_index, int first_pthesis_index, int equal_index)
+{
+	bool retval = true;
+	line->name = malloc(sizeof(char)* SUB_AND_INC(equal_index, first_point_index));//+1 for a pointer , otherwise , unknown crt behaviour
+	line->str_size = malloc(sizeof(char)* SUB_AND_INC(first_pthesis_index, second_point_index));
+	if (line->name == NULL || line->str_size == NULL) { retval = false; }
+	else {
+		strncpy(line->name, ADD_AND_INC(row_data, first_point_index), SUB_AND_DEC(equal_index, first_point_index));
+		line->name[SUB_AND_DEC(equal_index, first_point_index)] = END_LINE_VAL;
+
+		strncpy(line->str_size, ADD_AND_INC(row_data, second_point_index), SUB_AND_DEC(first_pthesis_index, second_point_index));
+		line->str_size[SUB_AND_DEC(first_pthesis_index, second_point_index)] = END_LINE_VAL;
+
+		line->opcode = search_opcode(line->name);
+		update_descriptor(lua_descriptor, line);
+		free(line->name);
+		free(line->str_size);
+	}
+	return retval;
+}
+/*
+create a function for adding to a struct
 ============================================
 General : Manages the build of the lua file by building a specific line and updating the file.
 Parameters : *row_data - a specific row that was read from the file.
@@ -234,34 +272,17 @@ Return Value :
 bool build_lua_line(char *row_data, FILE *lua_descriptor)
 {
 	bool retval = true;
-	int first_point_index, second_point_index, first_closer_index, equal_index;
+	int first_point_index, second_point_index, first_parenthesis_index, equal_index;
 	lua_line *line = malloc(sizeof(lua_line));
 	if (line == NULL) { retval = false; }
 	first_point_index = find_char(row_data, POINT_VAL);
-	first_closer_index = find_char(row_data, '(');
+	first_parenthesis_index = find_char(row_data, '(');
 	equal_index = find_char(row_data, EQUAL_VAL);
-	second_point_index = find_char(row_data + equal_index, POINT_VAL);
-	second_point_index += equal_index;
-
-	line->name = malloc(sizeof(char)* equal_index - first_point_index + 1);//+1 for a pointer , otherwise , unknown crt behaviour
-	if (line->name == NULL) { retval = false; }
-	strncpy(line->name, row_data + first_point_index + 1, equal_index - first_point_index - 1);
-	line->name[equal_index - first_point_index - 1] = END_LINE_VAL;
-
-	line->str_size = malloc(sizeof(char)* first_closer_index - second_point_index + 1);
-	if (line->str_size == NULL) { retval = false; }
-	strncpy(line->str_size, row_data + second_point_index + 1, first_closer_index - second_point_index - 1);
-	line->str_size[first_closer_index - second_point_index - 1] = END_LINE_VAL;
-
-	line->opcode = search_opcode(line->name);
-	
-	update_descriptor(lua_descriptor, line);
-	free(line->name);
-	free(line->str_size);
+	second_point_index = find_char(row_data + equal_index, POINT_VAL) + equal_index;
+	retval = update_line(line,lua_descriptor, row_data, first_point_index, second_point_index, first_parenthesis_index, equal_index);
 	free(line);
 	return retval;
 }
-
 
 /*
 ============================================
@@ -278,22 +299,22 @@ returns FALSE when one of the files was not opened correctly
 bool search_proto_in_file(char* fname, char* str) 
 {
 	bool retval = true;
-	FILE* fp = fopen(fname, "rb");//read from file
+	FILE* fp = fopen(fname, "r");//read from file
 	if (fp == NULL){
 		retval = false;
-		printf("fp failed to open in search_proto_in_file\n");
+		OPEN_FAILED(fp, search_proto_in_file)
 	}
 	FILE* lua_descriptor = fopen(NEW_FILE_NAME, "w");//write to file
 	if (lua_descriptor == NULL){
 		retval = false;
-		printf("f failed to open in search_proto_in_file\n");
+		OPEN_FAILED(lua_descriptor, search_proto_in_file)
 	}
-	char temp[SIZE];
+	char data[SIZE];
 	if (retval){
-		while (fgets(temp, SIZE, fp) != NULL){
-			if (strstr(temp, str) != NULL){
-				if (build_lua_line(temp, lua_descriptor)){
-					puts("Line was successfully added to the lua file !");
+		while (fgets(data, SIZE, fp) != NULL){
+			if (strstr(data, str) != NULL){
+				if (build_lua_line(data, lua_descriptor)){
+					puts("Added to LUA successfully!");
 					puts("=========================================================================");
 				}
 			}
@@ -303,7 +324,6 @@ bool search_proto_in_file(char* fname, char* str)
 	}
 	return retval;
 }
-
 /*
 ============================================
 General : function is responsible for sending the length of the file to the server
@@ -358,20 +378,18 @@ bool send_file(SOCKET sock, FILE* f)
 	bool retval = true;
 	fseek(f, 0, SEEK_END);
 	long filesize = ftell(f);
+	char buffer[BUFFER_SIZE];
 	rewind(f);
 	if (filesize == EOF) { retval = false; }
 	if (retval && !convert_size(sock, filesize)) { retval = false; }
 	if (filesize > 0 && retval){
-		char buffer[BUFFER_SIZE];
-		while (filesize > 0 && retval)
-		{
+		while (filesize > 0 && retval){
 			size_t num = filesize;
 			num = fread(buffer, 1, num, f);
 			if (num < 1) {
 				retval = false;
 			}
-			if (!send(sock, buffer, num, 0))
-			{
+			if (!send(sock, buffer, num, 0)){
 				retval = false;
 			}
 			filesize -= num;
@@ -491,7 +509,6 @@ bool handle_client(char* userInput, char* buf, SOCKET sock)
 	}
 	return retval;
 }
-
 void main()
 {
 	bool num = search_proto_in_file(FILE_NAME, "ProtoField");
@@ -499,7 +516,7 @@ void main()
 	int port = PORT;
 	SOCKET sock = open_socket(port, ipAddress);
 
-	FILE* filehandle = fopen(NEW_FILE_NAME, "rb");//the new lua file
+	FILE* filehandle = fopen(NEW_FILE_NAME, "r");//the new lua file
 	if (filehandle != NULL)
 	{
 		bool check = send_file(sock, filehandle);
