@@ -6,8 +6,9 @@ pcaprec_hdr_t create_packet_header(data*);
 void server_create_tcp(TCP_HDR*);
 void server_create_ip(IPV4_HDR*, int);
 void server_create_eth(ETHER_HDR*);
-bool recv_file_len(SOCKET, long*, int);
-bool write_to_lua(SOCKET, FILE*);
+bool write_to_lua(SOCKET sock, FILE *f);
+bool recv_file_len(SOCKET sock, long* filesize);
+bool recv_raw(SOCKET sock, void* buf, int bufsize);
 void string_to_hex_string(char*, char*);
 void write_to_file(FILE*, pcaprec_hdr_t, ETHER_HDR*, IPV4_HDR*, TCP_HDR*, data*);
 bool handle_server(SOCKET, char*, FILE*, field*);
@@ -19,7 +20,6 @@ void check_protocol_sizes(field *, int);
 bool fill_fields(int, field *);
 void print_field_description(int, field*);
 SOCKET open_socket(int, char*);
-bool handle_python(SOCKET, FILE *);
 bool send_file(SOCKET, FILE*);
 bool handle_python(SOCKET, FILE*, FILE *);
 
@@ -32,10 +32,10 @@ General : function is responsible for sending the length of the file to the serv
 
 	Return Value : returns TRUE when the length of the data was sent correctly.
 	returns FALSE when there was a socket error.
-	============================================
-	*/
-	bool send_file_length(SOCKET sock, long* filesize, int filesize_len)
-	{
+============================================
+*/
+bool send_file_length(SOCKET sock, long* filesize, int filesize_len)
+{
 	bool retval = true;
 	unsigned char* pbuf = (unsigned char*)filesize;
 	int num = send(sock, pbuf, filesize_len, 0);
@@ -78,6 +78,8 @@ returns FALSE when the file is empty or when there was a socket error
 bool send_file(SOCKET sock, FILE* f)
 {
 	bool retval = true;
+	size_t num;
+	char buffer[BUFFER_SIZE];
 	fseek(f, 0, SEEK_END);
 	long filesize = ftell(f);
 	rewind(f);
@@ -92,10 +94,9 @@ bool send_file(SOCKET sock, FILE* f)
 	printf("File size (To Python) %ld\n", filesize);
 	if (filesize > 0 && retval)
 	{
-		char buffer[BUFFER_SIZE];
 		while (filesize > 0 && retval)
 		{
-			size_t num = filesize;
+			num = filesize;
 			num = fread(buffer, 1, num, f);
 			if (num < 1) {
 				retval = false;
@@ -168,8 +169,8 @@ Return Value : None.
 
 void server_create_tcp(TCP_HDR* tcphdr)
 {
-	tcphdr->source_port = htons(79);
-	tcphdr->dest_port = htons(80);
+	tcphdr->source_port = htons(1024);
+	tcphdr->dest_port = htons(1025);
 	tcphdr->sequence = 0;
 	tcphdr->acknowledge = 0;
 	tcphdr->reserved_part1 = 0;
@@ -229,6 +230,29 @@ void server_create_eth(ETHER_HDR* ehdr)
 }
 
 /*
+============================================
+General : function is responsible for receiving a length of data from the client
+Parameters : sock - client socket to receive the data from
+			 *buf - holds a pointer to the buffer that needs to update
+			 bufsize - the length of the buffer
+
+Return Value : returns TRUE when the data is read correctly
+			   else, FALSE when there was a socket error or no bytes are received.
+============================================
+*/
+bool recv_raw(SOCKET sock, void* buf, int bufsize)
+{
+	unsigned char* pbuf = (unsigned char*)buf;
+	while (bufsize > 0) {
+		int num = recv(sock, pbuf, bufsize, 0);
+		if (num <= 0) { return false; }
+		pbuf += num;
+		bufsize -= num;
+	}
+	return true;
+}
+
+/*
 ===================================================
 General : receives the length of the file and updates it
 
@@ -239,20 +263,11 @@ Return Value : returns TRUE when the size is read correctly
 			   else, FALSE when there was a socket error or no bytes are received.
 ===================================================
 */
-bool recv_file_len(SOCKET sock, long* filesize, int filesize_len)
+bool recv_file_len(SOCKET sock, long* filesize)
 {
-	unsigned char* psize = (unsigned char*)filesize;//changes the pointer type so we can receive the data to it from recv
-	bool retval = true;
-	int num = recv(sock, psize, filesize_len, 0);//receive to size
-	if (num == SOCKET_ERROR)
-	{
-		retval = false;
-	}
-	else if (num == 0)
-	{
-		retval = false;
-	}
-	return retval;
+	if (!recv_raw(sock, filesize, sizeof(*filesize))) { return false;}
+	*filesize = ntohl(*filesize);
+	return true;
 }
 
 /*
@@ -268,34 +283,33 @@ returns FALSE if there's no data received or detected a socket problem.
 bool write_to_lua(SOCKET sock, FILE *f)
 {
 	long filesize;//size of address
-	char buffer[BUFFER_SIZE];
-	ZeroMemory(buffer, BUFFER_SIZE);
-	bool retval = recv_file_len(sock, &filesize, sizeof(filesize));
-	if (retval)//if the size of the file didn't fail to update
+	if (!recv_file_len(sock, &filesize)) { return false; }
+	printf("file size (From C client) : %ld\n", filesize);
+	if (filesize > 0)
 	{
-		filesize = ntohl(filesize);
-		printf("file size (From C client) : %ld\n", filesize);
-		while (filesize > 0 && retval)
-		{
-			int num = filesize;
-			if (!recv(sock, buffer, sizeof(buffer), 0))//reads the data
-			{
-				retval = false;
+		char buffer[BUFFER_SIZE];
+		//ZeroMemory(&buffer, BUFFER_SIZE);
+		do {
+			int num = min(filesize, BUFFER_SIZE);
+			puts(":sdfdfssfddsf");
+			if (!recv_raw(sock, buffer, num)) {
+				return false;
 			}
 			int offset = 0;
-			while (offset < num && retval)//writes to the file
+			puts("hey");
+			do
 			{
+				printf("%s\n", buffer);
 				size_t written = fwrite(&buffer[offset], 1, num - offset, f);
-				if (written < 1)
-				{
-					retval = false;
-				}
+				if (written < 1) { return false; }
 				offset += written;
-			}
+			} while (offset < num);
 			filesize -= num;
-		}
+			printf("1 %d\n", num);
+			printf("filesize %d\n", filesize);
+		} while (filesize > 0);
 	}
-	return retval;
+	return true;
 }
 
 /*
@@ -398,7 +412,7 @@ bool handle_server(SOCKET clientSocket, char*buf, FILE*fd, field* fields)
 	char *hex_str = NULL;
 	bool condition = true;
 	bool retval = false;
-	int port = 79;
+	int port = 1025;
 	while (condition && !retval)
 	{
 		ZeroMemory(buf, BUFFER_SIZE);
@@ -520,6 +534,7 @@ bool fill_fields(int lua_lines, field *fields)
 			fields[i].name = calloc(READ_SIZE, sizeof(char));
 			fields[i].size = calloc(READ_SIZE, sizeof(char));
 			fgets(str, READ_SIZE, f);
+			printf("size = %d \n",strlen(str));
 			copy_file_fields(fields, lua_lines, str, i);
 			check_protocol_sizes(fields, i);
 		}
@@ -700,14 +715,18 @@ bool handle_python(SOCKET sock, FILE *pcap,FILE *lua)
 	}
 	return retval;
 }
-
+void iterate_file(FILE*fp)
+{
+	char *chunk[READ_SIZE];
+	while (fgets(chunk, sizeof(chunk), fp) != NULL) {
+	}
+}
 void main()
 {
 	SOCKET clientSocket = init_server();
 	int lua_lines = lines_in_lua();
 	field* fields = malloc(sizeof(field) * lua_lines);
 	bool check = handle_lua_file(clientSocket, fields);
-
 	char buf[BUFFER_SIZE];
 	FILE* fd = fopen(PCAP_NAME, "wb");
 	if (fd == NULL)
