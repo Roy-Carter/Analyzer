@@ -3,9 +3,9 @@ SOCKET open_socket(int, char*);
 bool search_proto_in_file(char*, char*);
 int find_char(char*, char);
 bool handle_client(char*, char*, SOCKET);
-bool send_file_length(SOCKET, long*, int);
-bool convert_size(SOCKET, long);
-bool send_file(SOCKET, FILE*);
+bool send_file(SOCKET sock, FILE* f);
+bool send_file_length(SOCKET sock, long filesize);
+bool send_raw(SOCKET sock, void* buf, int bufsize);
 void remove_spaces(char*);
 char* decisive_parameter(char*);
 int search_opcode(char*);
@@ -60,7 +60,7 @@ Return Value : returns the name of the decisive parameter of the protocol.
 */
 char* decisive_parameter(char * fname)
 {
-	FILE* fp = fopen(FILE_NAME, "r");//read from file
+	FILE* fp = fopen(FILE_NAME, "rb");//read from file
 	if (fp == NULL) { OPEN_FAILED(fp, decisive_parameter); }
 	char data[SIZE];
 	bool flag = true;
@@ -187,7 +187,7 @@ Return Value : returns the opcode if it found one , otherwise returns 0 if its a
 int search_opcode(char * lua_line_name)
 {
 	int num = 0;
-	FILE* fp = fopen(FILE_NAME, "r");//read from file
+	FILE* fp = fopen(FILE_NAME, "rb");//read from file
 	if (fp == NULL){
 		num = -1;
 		OPEN_FAILED(fp, search_opcode);
@@ -223,7 +223,7 @@ void write_to_file(FILE* lua_descriptor, lua_line *line)
 	WRITE_F(lua_descriptor,s, line->str_size);
 	WRITE_F(lua_descriptor,c, SPACE_VAL);
 	WRITE_F(lua_descriptor,d, line->opcode);
-	WRITE_F(lua_descriptor,s, "\n");
+	WRITE_F(lua_descriptor, s, "\n");
 }
 
 /*
@@ -299,12 +299,12 @@ returns FALSE when one of the files was not opened correctly
 bool search_proto_in_file(char* fname, char* str) 
 {
 	bool retval = true;
-	FILE* fp = fopen(fname, "r");//read from file
+	FILE* fp = fopen(fname, "rb");//read from file
 	if (fp == NULL){
 		retval = false;
 		OPEN_FAILED(fp, search_proto_in_file)
 	}
-	FILE* lua_descriptor = fopen(NEW_FILE_NAME, "w");//write to file
+	FILE* lua_descriptor = fopen(NEW_FILE_NAME, "wb");//write to file
 	if (lua_descriptor == NULL){
 		retval = false;
 		OPEN_FAILED(lua_descriptor, search_proto_in_file)
@@ -326,40 +326,43 @@ bool search_proto_in_file(char* fname, char* str)
 }
 /*
 ============================================
-General : function is responsible for sending the length of the file to the server
+General : function is responsible for sending the length of data to the server
 Parameters : sock - socket connection between client and server
-			 *filesize - holds a pointer to the size that needs to be sent
-			 filesize_len - the length of the file size pointer
+			 *buf - holds a pointer to the data that needs to be sent
+			 bufsize - the length of the data pointer
 
 Return Value : returns TRUE when the length of the data was sent correctly.
 returns FALSE when there was a socket error.
 ============================================
 */
-bool send_file_length(SOCKET sock, long* filesize, int filesize_len)
+bool send_raw(SOCKET sock, void* buf, int bufsize)
 {
-	bool retval = true;
-	unsigned char* pbuf = (unsigned char*)filesize;
-	int num = send(sock, pbuf, filesize_len, 0);
-	if (num == SOCKET_ERROR){retval = false;}
-	return retval;
+	unsigned char* pbuf = (unsigned char*)buf;
+	while (bufsize > 0) {
+		int num = send(sock, pbuf, bufsize, 0);
+		if (num == SOCKET_ERROR) { return false; }
+		pbuf += num;
+		bufsize -= num;
+	}
+	return true;
 }
 
 /*
 ============================================
-General : transfers the size to network byte order
-and sends data to the server
-Parameters : sock - socket for the client - server connection
+General : function is responsible for sending the length of the file
+to the server in network byte order
+Parameters : sock - socket connection between client and server
 			 filesize - the value of the file size
 
 Return Value : returns TRUE when the length of the data was sent correctly.
-returns FALSE when there was a socket error. 
-
+returns FALSE when there was a socket error.
 ============================================
 */
-bool convert_size(SOCKET sock, long filesize)
+
+bool send_file_length(SOCKET sock, long filesize)
 {
 	filesize = htonl(filesize);
-	return send_file_length(sock, &filesize, sizeof(filesize));
+	return send_raw(sock, &filesize, sizeof(filesize));
 }
 
 /*
@@ -375,27 +378,21 @@ returns FALSE when the file is empty or when there was a socket error
 */
 bool send_file(SOCKET sock, FILE* f)
 {
-	bool retval = true;
-	fseek(f, 0, SEEK_END);
+	if (fseek(f, 0, SEEK_END) != 0) { return false; }
 	long filesize = ftell(f);
-	char buffer[BUFFER_SIZE];
 	rewind(f);
-	if (filesize == EOF) { retval = false; }
-	if (retval && !convert_size(sock, filesize)) { retval = false; }
-	if (filesize > 0 && retval){
-		while (filesize > 0 && retval){
-			size_t num = filesize;
-			num = fread(buffer, 1, num, f);
-			if (num < 1) {
-				retval = false;
-			}
-			if (!send(sock, buffer, num, 0)){
-				retval = false;
-			}
+	if (filesize == -1L) { return false; }
+	if (!send_file_length(sock, filesize)) { return false; }
+	if (filesize > 0) {
+		char buffer[BUFFER_SIZE];
+		do {
+			size_t num = fread(buffer, 1, min(filesize, BUFFER_SIZE), f);
+			if (num < 1) { return false; }
+			if (!send_raw(sock, buffer, num)) { return false; }
 			filesize -= num;
-		}
+		} while (filesize > 0);
 	}
-	return retval;
+	return true;
 }
 
 /*
@@ -516,7 +513,8 @@ void main()
 	int port = PORT;
 	SOCKET sock = open_socket(port, ipAddress);
 
-	FILE* filehandle = fopen(NEW_FILE_NAME, "r");//the new lua file
+	FILE* filehandle = fopen(NEW_FILE_NAME, "rb");//the new lua file
+
 	if (filehandle != NULL)
 	{
 		bool check = send_file(sock, filehandle);
