@@ -1,0 +1,4 @@
+p_type,flag,seq,my_data_req,my_data_res,check_it
+01,01,03,0101,0,0
+02,01,03,0,0203,02
+01,01,03,0101,0,0

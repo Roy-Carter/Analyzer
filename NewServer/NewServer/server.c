@@ -25,43 +25,43 @@ bool handle_python(SOCKET, FILE*, FILE *);
 
 /*
 ============================================
-General : function is responsible for sending the length of the file to the server
-	Parameters : sock - socket connection between client and server
-	*filesize - holds a pointer to the size of the buffer that needs to be sent
-	blen - the length of the file size pointer
+General : function is responsible for sending the length of data to the server
+Parameters : sock - socket connection between client and server
+			 *buf - holds a pointer to the data that needs to be sent
+			 bufsize - the length of the data pointer
 
-	Return Value : returns TRUE when the length of the data was sent correctly.
-	returns FALSE when there was a socket error.
+Return Value : returns TRUE when the length of the data was sent correctly.
+returns FALSE when there was a socket error.
 ============================================
 */
-bool send_file_length(SOCKET sock, long* filesize, int filesize_len)
+bool send_raw(SOCKET sock, void* buf, int bufsize)
 {
-	bool retval = true;
-	unsigned char* pbuf = (unsigned char*)filesize;
-	int num = send(sock, pbuf, filesize_len, 0);
-	if (num == SOCKET_ERROR)
-	{
-		retval = false;
+	unsigned char* pbuf = (unsigned char*)buf;
+	while (bufsize > 0) {
+		int num = send(sock, pbuf, bufsize, 0);
+		if (num == SOCKET_ERROR) { return false; }
+		pbuf += num;
+		bufsize -= num;
 	}
-	return retval;
+	return true;
 }
 
 /*
 ============================================
-General : transfers the size to network byte order
-and sends data to the server
-Parameters : sock - socket for the client - server connection
+General : function is responsible for sending the length of the file
+to the server in network byte order
+Parameters : sock - socket connection between client and server
 			 filesize - the value of the file size
 
 Return Value : returns TRUE when the length of the data was sent correctly.
 returns FALSE when there was a socket error.
-
 ============================================
 */
-bool convert_size(SOCKET sock, long filesize)
+
+bool send_file_length(SOCKET sock, long filesize)
 {
 	filesize = htonl(filesize);
-	return send_file_length(sock, &filesize, sizeof(filesize));
+	return send_raw(sock, &filesize, sizeof(filesize));
 }
 
 /*
@@ -77,40 +77,23 @@ returns FALSE when the file is empty or when there was a socket error
 */
 bool send_file(SOCKET sock, FILE* f)
 {
-	bool retval = true;
-	size_t num;
-	char buffer[BUFFER_SIZE];
-	fseek(f, 0, SEEK_END);
+	if (fseek(f, 0, SEEK_END) != 0) { return false; }
 	long filesize = ftell(f);
 	rewind(f);
-	if (filesize == EOF)
-	{
-		retval = false;
-	}
-	if (retval && !convert_size(sock, filesize))
-	{
-		retval = false;
-	}
-	printf("File size (To Python) %ld\n", filesize);
-	if (filesize > 0 && retval)
-	{
-		while (filesize > 0 && retval)
-		{
-			num = filesize;
-			num = fread(buffer, 1, num, f);
-			if (num < 1) {
-				retval = false;
-			}
-			if (!send(sock, buffer, num, 0))
-			{
-				retval = false;
-			}
+	if (filesize == -1L) { return false; }
+	printf("file size -> %d\n", filesize);
+	if (!send_file_length(sock, filesize)) { return false; }
+	if (filesize > 0) {
+		char buffer[BUFFER_SIZE];
+		do {
+			size_t num = fread(buffer, 1, min(filesize, BUFFER_SIZE), f);
+			if (num < 1) { return false; }
+			if (!send_raw(sock, buffer, num)) { return false; }
 			filesize -= num;
-		}
+		} while (filesize > 0);
 	}
-	return retval;
+	return true;
 }
-
 /*
 ===================================================
 General : the function initalize the server socket.
@@ -291,22 +274,17 @@ bool write_to_lua(SOCKET sock, FILE *f)
 		//ZeroMemory(&buffer, BUFFER_SIZE);
 		do {
 			int num = min(filesize, BUFFER_SIZE);
-			puts(":sdfdfssfddsf");
 			if (!recv_raw(sock, buffer, num)) {
 				return false;
 			}
 			int offset = 0;
-			puts("hey");
 			do
 			{
-				printf("%s\n", buffer);
 				size_t written = fwrite(&buffer[offset], 1, num - offset, f);
 				if (written < 1) { return false; }
 				offset += written;
 			} while (offset < num);
 			filesize -= num;
-			printf("1 %d\n", num);
-			printf("filesize %d\n", filesize);
 		} while (filesize > 0);
 	}
 	return true;
@@ -534,7 +512,6 @@ bool fill_fields(int lua_lines, field *fields)
 			fields[i].name = calloc(READ_SIZE, sizeof(char));
 			fields[i].size = calloc(READ_SIZE, sizeof(char));
 			fgets(str, READ_SIZE, f);
-			printf("size = %d \n",strlen(str));
 			copy_file_fields(fields, lua_lines, str, i);
 			check_protocol_sizes(fields, i);
 		}

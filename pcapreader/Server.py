@@ -1,7 +1,7 @@
 import socket
-from scapy.all import *
+from LuaHandler import *
 import matplotlib.pyplot as plotter
-import binascii
+
 
 # MAGIC STRINGS
 BUFFER = 4096
@@ -38,31 +38,6 @@ class Server:
         self.request_counter = 0
         self.response_counter = 0
 
-    def create_graph(self):
-        """
-        Function that prints a graph output of the packet received of roy's protocol(divided to request/response)
-        :return: None - object output function
-        """
-        pie_labels = 'Request', 'Response'
-        packets = self.request_counter + self.response_counter
-        population_share = [(self.request_counter / packets) * 100, (self.response_counter / packets) * 100]
-        my_colors = ['lightgreen', 'lightblue']
-        figure_object, axes_object = plotter.subplots()
-        axes_object.set_title('Packets Received')
-        # Draw the pie chart
-        axes_object.pie(population_share,
-                        # The fields of the graph
-                        labels=pie_labels,
-                        # two points after the decimal
-                        autopct='%1.2f%%',
-                        startangle=90,
-                        # colors for the graph
-                        colors=my_colors
-                        )
-        # Aspect ratio - equal means pie is a circle
-        axes_object.axis('equal')
-        plotter.show()
-
     def print_dict(self):
         """
         This function purpose is to print out the dictionary that descirbes the lua file
@@ -72,35 +47,6 @@ class Server:
         for key, value in self.protocol_fields.items():
             print(key, ' : ', value)
 
-    def read_lua(self):
-        """
-        This function purpose is to parse the lua file into the dictionary
-        and to update the values of the number of hex letters to check in the dictionary
-        :return: returns True , if the file was opened correctly and updated it the dictionary.
-        Returns False otherwise.
-        """
-        ret_val = False
-        try:
-            lua_f = open(LUA_NAME, "rb")
-            c_line = 0
-            for line in lua_f:
-                line_values = line.split()
-                dict_list = [line_values[0].decode()]
-                size = line_values[1].decode()
-                if size == 'uint8':
-                    dict_list.append(2)
-                elif size == 'uint16':
-                    dict_list.append(4)
-                else:
-                    continue
-                self.protocol_fields[c_line] = dict_list
-                c_line += 1
-            self.print_dict()
-            lua_f.close()
-            ret_val = True
-        except FileNotFoundError:
-            print(FILE_OPEN_ERROR)
-        return ret_val
 
     def new_pcap_descriptor(self, fixed_pcap_list):
         """
@@ -135,96 +81,6 @@ class Server:
             ret_val = True
         except FileNotFoundError:
             print(FILE_OPEN_ERROR)
-        return ret_val
-
-    def check_pkt(self, pkt):
-        """
-        This function purpose is to check whether the packet is in the standards that i defined
-        to it or no
-        :param pkt: Raw TCP payload of the packet
-        :return: returns True if the packet is in the standards i chose , will return False
-        if there was a failed type , flag , seq or pdu.
-        """
-        pkt = binascii.hexlify(pkt)
-        pkt = pkt.decode()
-        offset = 0
-        p_type = pkt[offset:offset + self.protocol_fields[0][1]]
-        print(SEP)
-        if p_type.find('01') >= 0:
-            print("Checking request..")
-            ret_val = self.check_request(pkt)
-        elif p_type.find('02') >= 0:
-            print("Checking response..")
-            ret_val = self.check_response(pkt)
-        else:
-            print(TYPE_ERROR)
-            ret_val = False
-        return ret_val
-
-    def check_request(self, hex_pkt):
-        """
-        This function check if the pkt of request type is correct
-        :param hex_pkt: the TCP payload as a decoded hexadecimal string
-        :return:Returns True whether the REQUEST type packet is correct
-        and False if there was a fail at the flag,seq,pdu
-        """
-        ret_val = True
-        offset = 0
-        offset += self.protocol_fields[0][1]
-        flag = hex_pkt[offset:offset + self.protocol_fields[1][1]]
-        if flag.find('01') < 0 and flag.find('02') < 0:
-            print(FLAG_ERROR)
-            ret_val = False
-        offset += self.protocol_fields[1][1]
-
-        seq = hex_pkt[offset:offset + self.protocol_fields[2][1]]
-        if seq.find('03') < 0:
-            ret_val = False
-            print(SEQ_ERROR)
-        offset += self.protocol_fields[2][1]
-
-        pdu = hex_pkt[offset:offset + self.protocol_fields[3][1]]
-        offset += self.protocol_fields[3][1]
-        if pdu.find('0101') < 0:
-            print(PDU_ERROR)
-            ret_val = False
-        if ret_val:
-            self.request_counter += 1
-            print(ret_val)
-        print(SEP)
-        return ret_val
-
-    def check_response(self, hex_pkt):
-        """
-        This function check if the pkt of request type is correct
-        :param hex_pkt: the TCP payload as a decoded  hexadecimal string
-        :return:Returns True whether the RESPONSE type packet is correct
-        and False if there was a fail at the flag,seq,pdu
-        """
-        ret_val = True
-        offset = 0
-        offset += self.protocol_fields[0][1]
-        flag = hex_pkt[offset:offset + self.protocol_fields[1][1]]
-        if flag.find('01') < 0 and flag.find('02') < 0:
-            print(FLAG_ERROR)
-            ret_val = False
-        offset += self.protocol_fields[1][1]
-
-        seq = hex_pkt[offset:offset + self.protocol_fields[2][1]]
-        if seq.find('03') < 0:
-            ret_val = False
-            print(SEQ_ERROR)
-        offset += self.protocol_fields[2][1]
-
-        pdu = hex_pkt[offset:offset + self.protocol_fields[4][1]]
-        offset += self.protocol_fields[4][1]
-        if pdu.find('0202') < 0:
-            print(PDU_ERROR)
-            ret_val = False
-        if ret_val:
-            self.response_counter += 1
-            print(ret_val)
-        print(SEP)
         return ret_val
 
     @staticmethod
@@ -269,8 +125,9 @@ class Server:
         conn, addr = server.accept()
         self.receive_file(conn, PCAP_NAME)
         self.receive_file(conn, LUA_NAME)
-        ret_val = self.read_lua()
+        lua_handler = LuaHandler()
+        ret_val = lua_handler.read_lua()
         if ret_val:
-            ret_val = self.parse_pcap()
+            ret_val = lua_handler.parse_pcap()
         conn.close()
         return ret_val
