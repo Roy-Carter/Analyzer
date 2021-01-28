@@ -123,7 +123,6 @@ class LuaHandler:
             ret_val = True
         except FileNotFoundError:
             print(FILE_OPEN_ERROR)
-        print("heysdadsasad")
         return ret_val
 
     def initialize_proto_dict(self):
