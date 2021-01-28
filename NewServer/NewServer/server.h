@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <ws2tcpip.h>
-
 #define NEW_FILE_NAME "receive.lua"
 #define PCAP_NAME "test.pcap"
 #define SRC_ADDR inet_addr("1.2.3.4")
@@ -20,6 +19,7 @@
 #define INT8 "uint8_t"
 #define INT16 "uint16_t"
 #define SPACE " "
+
 
 
 typedef struct field_view {
