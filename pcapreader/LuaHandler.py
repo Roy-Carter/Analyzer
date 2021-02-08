@@ -91,7 +91,12 @@ class LuaHandler:
             attr_list.append(i[0])
         return attr_list
 
-    def create_csv(self, packets_list, attr_list):
+    def remove_csv_outcasts(self, df):
+        for index, row in df.iterrows():
+            print(row['c1'], row['c2'])
+
+    @staticmethod
+    def create_csv(packets_list, attr_list):
         """
         Creates and prints the csv file for the machine learning process
         :param packets_list: holds a list of lists of each packet values parsed.
@@ -99,6 +104,7 @@ class LuaHandler:
         :return: None.
         """
         frame = pd.DataFrame(packets_list, columns=attr_list)
+        frame.fillna(0, inplace=True, downcast='infer')
         frame.to_csv("CsvFiles/Attributes.csv", index=False)
         print("======================================")
         print(frame)
@@ -108,7 +114,6 @@ class LuaHandler:
         Parsing the pcap to a csv file.
         :return: return True if the file was parsed into csv , otherwise returns false.
         """
-
         ret_val = False
         attr_list = self.convert_attributes_list()
         protocols_list = []
@@ -154,7 +159,11 @@ class LuaHandler:
         if val_type in self.protocol_types_fields.keys():
             for field_name in self.protocol_types_fields[val_type]:
                 val = pkt[offset:offset + self.protocol_fields[lua_dict_index][1]]
-                packet_dict[field_name] = val
+                if val:
+                    packet_dict[field_name] = val
+                else: # needs this check to avoid having no values in extreme circumstances
+                    packet_dict[field_name] = 0
+
                 offset += self.protocol_fields[lua_dict_index][1]
 
     def check_pkt(self, pkt):
@@ -178,7 +187,11 @@ class LuaHandler:
                     flag = True
                 else:
                     p_type = self.protocol_fields[index][0]
-                    packet_dict[p_type] = val
+                    if val: # same check as in msg_type
+                        packet_dict[p_type] = val
+                    else:
+                        packet_dict[p_type] = 0
+
                 offset += self.protocol_fields[index][1]
         return packet_dict
 
