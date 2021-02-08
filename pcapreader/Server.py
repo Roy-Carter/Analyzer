@@ -1,8 +1,6 @@
 import socket
 from LuaHandler import *
-import matplotlib.pyplot as plotter
-
-
+from Algo import *
 # MAGIC STRINGS
 BUFFER = 4096
 LISTENERS = 1
@@ -35,8 +33,6 @@ class Server:
         self.host = host
         self.port = port
         self.protocol_fields = {}
-        self.request_counter = 0
-        self.response_counter = 0
 
     def print_dict(self):
         """
@@ -56,17 +52,10 @@ class Server:
         :return: None - new pcap creation and print function
         """
         wrpcap(NEW_PCAP_NAME, fixed_pcap_list)
+        print("New File was created")
         print(SEP)
-        print("number of request packets :" + str(self.request_counter))
-        print("number of response packets :" + str(self.response_counter))
-        print(SEP)
-
+    """
     def parse_pcap(self):
-        """
-        Function that's responsible of parsing the pcap , and creating a fixed pcap
-        with just correct Roy's Protocol packets
-        :return: Returns True if the parsing was operated successfully , otherwise returns False
-        """
         ret_val = False
         try:
             pkt_list = rdpcap(PCAP_NAME)
@@ -82,7 +71,7 @@ class Server:
         except FileNotFoundError:
             print(FILE_OPEN_ERROR)
         return ret_val
-
+    """
     @staticmethod
     def receive_file(conn, file_name):
         """
@@ -129,5 +118,7 @@ class Server:
         ret_val = lua_handler.read_lua()
         if ret_val:
             ret_val = lua_handler.parse_pcap()
+            algo = MLAlgorithm()
+            algo.start_algorithm()
         conn.close()
         return ret_val
