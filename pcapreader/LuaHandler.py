@@ -91,10 +91,6 @@ class LuaHandler:
             attr_list.append(i[0])
         return attr_list
 
-    def remove_csv_outcasts(self, df):
-        for index, row in df.iterrows():
-            print(row['c1'], row['c2'])
-
     @staticmethod
     def create_csv(packets_list, attr_list):
         """
@@ -104,7 +100,6 @@ class LuaHandler:
         :return: None.
         """
         frame = pd.DataFrame(packets_list, columns=attr_list)
-        frame.fillna(0, inplace=True, downcast='infer')
         frame.to_csv("CsvFiles/Attributes.csv", index=False)
         print("======================================")
         print(frame)
@@ -116,15 +111,15 @@ class LuaHandler:
         """
         ret_val = False
         attr_list = self.convert_attributes_list()
-        protocols_list = []
+        packets_list = []
         try:
             pkt_list = rdpcap(PCAP_NAME)
             for pkt in pkt_list:
                 if Raw in pkt:
                     packet_payload = pkt[Raw].load
-                    protocol_description = self.check_pkt(packet_payload)
-                    protocols_list.append(list(protocol_description.values()))
-            self.create_csv(protocols_list, attr_list)
+                    packet_description = self.check_pkt(packet_payload)
+                    packets_list.append(list(packet_description.values()))
+            self.create_csv(packets_list, attr_list)
             ret_val = True
         except FileNotFoundError:
             print(FILE_OPEN_ERROR)
@@ -137,9 +132,8 @@ class LuaHandler:
         :return: returns a dictionary {<attr_list>..,<0>}
         """
         basic_list = []
-        for i in range(len(self.protocol_types_fields)):
-            # print(range(len(self.protocol_types_fields))) -- KeyError Exception 2/3 when changing opcode sometimes.
-            basic_list += self.protocol_types_fields[i]
+        for key, value in self.protocol_types_fields.items():
+            basic_list += self.protocol_types_fields[key]
 
         zeros = ['0' for i in range(len(self.protocol_fields))]
         basic_dict = dict(zip(basic_list, zeros))
@@ -190,7 +184,7 @@ class LuaHandler:
                     if val: # same check as in msg_type
                         packet_dict[p_type] = val
                     else:
-                        packet_dict[p_type] = 0
+                        packet_dict[p_type] = '0'
 
                 offset += self.protocol_fields[index][1]
         return packet_dict
