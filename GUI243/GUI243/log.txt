@@ -1,0 +1,62 @@
+-------------------------------------------
+[1, 5, 4, 504, 0, 0]
+Higher than 4 in flag
+Higher than 103 in my_data_req
+Lower than 203 in my_data_res
+Lower than 2 in check_it
+-------------------------------------------
+[2, 1, 3, 0, 101, 0]
+Lower than 2 in flag
+Lower than 101 in my_data_req
+Lower than 203 in my_data_res
+Lower than 2 in check_it
+-------------------------------------------
+[2, 1, 3, 0, 101, 0]
+Lower than 2 in flag
+Lower than 101 in my_data_req
+Lower than 203 in my_data_res
+Lower than 2 in check_it
+-------------------------------------------
+[33, 70, 0, 0, 0, 0]
+Higher than 2 in p_type
+Higher than 4 in flag
+Lower than 3 in seq
+Lower than 101 in my_data_req
+Lower than 203 in my_data_res
+Lower than 2 in check_it
+-------------------------------------------
+[1, 5, 4, 504, 0, 0]
+Higher than 4 in flag
+Higher than 103 in my_data_req
+Lower than 203 in my_data_res
+Lower than 2 in check_it
+-------------------------------------------
+[2, 1, 3, 0, 101, 0]
+Lower than 2 in flag
+Lower than 101 in my_data_req
+Lower than 203 in my_data_res
+Lower than 2 in check_it
+-------------------------------------------
+[68, 0, 0, 0, 0, 0]
+Higher than 2 in p_type
+Lower than 2 in flag
+Lower than 3 in seq
+Lower than 101 in my_data_req
+Lower than 203 in my_data_res
+Lower than 2 in check_it
+-------------------------------------------
+[68, 65, 79, 0, 0, 0]
+Higher than 2 in p_type
+Higher than 4 in flag
+Higher than 6 in seq
+Lower than 101 in my_data_req
+Lower than 203 in my_data_res
+Lower than 2 in check_it
+-------------------------------------------
+[68, 0, 0, 0, 0, 0]
+Higher than 2 in p_type
+Lower than 2 in flag
+Lower than 3 in seq
+Lower than 101 in my_data_req
+Lower than 203 in my_data_res
+Lower than 2 in check_it
