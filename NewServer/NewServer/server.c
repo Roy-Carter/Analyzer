@@ -1,15 +1,13 @@
 #include "server.h"
-
 SOCKET init_server();
 pcap_hdr_t create_global_header();
 pcaprec_hdr_t create_packet_header(data*);
 void server_create_tcp(TCP_HDR*);
 void server_create_ip(IPV4_HDR*, int);
 void server_create_eth(ETHER_HDR*);
-bool write_to_lua(SOCKET sock, FILE *f);
-bool recv_file_len(SOCKET sock, long* filesize);
-bool recv_raw(SOCKET sock, void* buf, int bufsize);
-void string_to_hex_string(char*, char*);
+bool write_to_lua(SOCKET , FILE *);
+bool recv_file_len(SOCKET , long*);
+bool recv_raw(SOCKET , void*, int);
 void write_to_file(FILE*, pcaprec_hdr_t, ETHER_HDR*, IPV4_HDR*, TCP_HDR*, data*);
 bool handle_server(SOCKET, char*, FILE*, field*);
 bool handle_lua_file(SOCKET, field*);
@@ -21,6 +19,8 @@ bool fill_fields(int, field *);
 void print_field_description(int, field*);
 SOCKET open_socket(int, char*);
 bool send_file(SOCKET, FILE*);
+bool send_file_length(SOCKET , long);
+bool send_raw(SOCKET , void*, int);
 bool handle_python(SOCKET, FILE*, FILE *);
 
 /*
@@ -77,6 +77,8 @@ returns FALSE when the file is empty or when there was a socket error
 */
 bool send_file(SOCKET sock, FILE* f)
 {
+	char buffer[BUFFER_SIZE];
+	size_t num;
 	if (fseek(f, 0, SEEK_END) != 0) { return false; }
 	long filesize = ftell(f);
 	rewind(f);
@@ -84,9 +86,8 @@ bool send_file(SOCKET sock, FILE* f)
 	printf("file size -> %d\n", filesize);
 	if (!send_file_length(sock, filesize)) { return false; }
 	if (filesize > 0) {
-		char buffer[BUFFER_SIZE];
 		do {
-			size_t num = fread(buffer, 1, min(filesize, BUFFER_SIZE), f);
+			num = fread(buffer, 1, min(filesize, BUFFER_SIZE), f);
 			if (num < 1) { return false; }
 			if (!send_raw(sock, buffer, num)) { return false; }
 			filesize -= num;
@@ -292,31 +293,6 @@ bool write_to_lua(SOCKET sock, FILE *f)
 
 /*
 ===================================================
-General : this function turns an input str to hexa str
-Parameters : *input - the string received
-			 *output - the new hexa string spot
-Return Value : None.
-===================================================
-*/
-void string_to_hex_string(char* input, char* output)
-{
-	int loop;
-	int i;
-
-	i = 0;
-	loop = 0;
-
-	while (input[loop] != '\0')
-	{
-		sprintf((char*)(output + i), "%02X", input[loop]);
-		loop += 1;
-		i += 2;
-	}
-	//insert NULL at the end of the output string
-	output[i++] = '\0';
-}
-/*
-===================================================
 General : writes to the pcap file.
 Parameters : *fd - file to write to
 			 packet_header - holds the header for a packet
@@ -509,8 +485,9 @@ bool fill_fields(int lua_lines, field *fields)
 	{
 		for (i = 0; i < lua_lines; i++)
 		{
-			fields[i].name = calloc(READ_SIZE, sizeof(char));
-			fields[i].size = calloc(READ_SIZE, sizeof(char));
+			memset(fields[i].name, 0, PARAM_MAX_SIZE);
+			memset(fields[i].size, 0, PARAM_MAX_SIZE);
+			memset(fields[i].opcode, 0, PARAM_MAX_SIZE);
 			fgets(str, READ_SIZE, f);
 			copy_file_fields(fields, lua_lines, str, i);
 			check_protocol_sizes(fields, i);
@@ -538,7 +515,7 @@ void print_field_description(int lua_lines, field* fields)
 		printf("Name[%d] %s\n", i, fields[i].name);
 		printf("Size[%d] %s\n", i, fields[i].size);
 		printf("Letters[%d] %d\n", i, fields[i].letters);
-		printf("\n");
+		printf("Opcode[%d] %s\n", i, fields[i].opcode); // no need for /n cuz when i read from the file it reads wit the \n
 	}
 }
 
@@ -563,6 +540,7 @@ void check_protocol_sizes(field * fields, int offset)
 		strncpy(fields[offset].size, "uint16_t", strlen(INT16));
 		fields[offset].letters = 4;
 	}
+
 }
 
 /*
@@ -582,6 +560,10 @@ void copy_file_fields(field * fields, int length, char * str, int offset)
 	strncpy(fields[offset].name, token, strlen(token));
 	token = strtok(NULL, SPACE);
 	strncpy(fields[offset].size, token, strlen(token));
+	token = strtok(NULL, SPACE);
+	strncpy(fields[offset].opcode, token, strlen(token));
+
+
 }
 
 /*
@@ -692,12 +674,7 @@ bool handle_python(SOCKET sock, FILE *pcap,FILE *lua)
 	}
 	return retval;
 }
-void iterate_file(FILE*fp)
-{
-	char *chunk[READ_SIZE];
-	while (fgets(chunk, sizeof(chunk), fp) != NULL) {
-	}
-}
+
 void main()
 {
 	SOCKET clientSocket = init_server();
@@ -717,11 +694,6 @@ void main()
 		//handles the C client - C server connection
 		bool correct_handle = handle_server(clientSocket, buf, fd, fields);
 		int i;
-		for (i = 0; i < lua_lines; i++)
-		{
-			free(fields[i].name);
-			free(fields[i].size);
-		}
 		fclose(fd);//finished with creating the pcap file , gotta send this to the python server
 		if (correct_handle)
 		{

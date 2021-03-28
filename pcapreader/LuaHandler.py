@@ -127,7 +127,7 @@ class LuaHandler:
 
     def initialize_proto_dict(self):
         """
-        This function creates an intizialize dictionary to use for the csv file where the key will be an attribute of the
+        This function creates an initialize dictionary to use for the csv file where the key will be an attribute of the
         protocol and the initialized value to him will be zero.
         :return: returns a dictionary {<attr_list>..,<0>}
         """
@@ -157,7 +157,6 @@ class LuaHandler:
                     packet_dict[field_name] = val
                 else: # needs this check to avoid having no values in extreme circumstances
                     packet_dict[field_name] = 0
-
                 offset += self.protocol_fields[lua_dict_index][1]
 
     def check_pkt(self, pkt):

@@ -73,7 +73,7 @@ class MLAlgorithm:
     def tree_train(self):
         """
         This function trains a decision tree classifier model
-        :return:
+        :return: a trained module
         """
         train = pd.read_csv("CsvFiles/AlgoTest.csv")
         df_working = train
