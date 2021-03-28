@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import sys
 
+
 def add_counter_label(frame):
     """
     Adds the ID column to the panda frame
@@ -57,7 +58,6 @@ class ResultsDPI:
         print(check_pd)
         check_pd_fix = check_pd.drop(["num_class", "p_type_y", "ID"], axis=1)
         check_pd_fix.rename(columns={'p_type_x': 'p_type'}, inplace=True)
-        check_pd_fix.to_csv("CsvFiles/Check.csv")
         print(check_pd_fix)
         columns = check_pd_fix.columns.tolist()
         sys.stdout = open("Output/log.txt", "w")

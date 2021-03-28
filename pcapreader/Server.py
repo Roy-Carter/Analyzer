@@ -1,6 +1,7 @@
 import socket
 from LuaHandler import *
 from Algo import *
+
 # MAGIC STRINGS
 BUFFER = 4096
 LISTENERS = 1
@@ -10,10 +11,6 @@ NEW_PCAP_NAME = "fixed.pcap"
 LUA_NAME = "descriptor.lua"
 HOST = "127.0.0.1"
 PORT = 2222
-TYPE_ERROR = "Error in Type"
-FLAG_ERROR = "Error in Flag"
-SEQ_ERROR = "Error in Seq"
-PDU_ERROR = "Error in Pdu"
 LISTENING_MSG = "listening at "
 FILE_OPEN_ERROR = "This file name does not exists"
 SEP = "=================="
@@ -43,35 +40,6 @@ class Server:
         for key, value in self.protocol_fields.items():
             print(key, ' : ', value)
 
-
-    def new_pcap_descriptor(self, fixed_pcap_list):
-        """
-        This function is responsible of creating the new pcap and printing out the number of
-        request / response packets it got .
-        :param fixed_pcap_list: list filled with the packets that are correct from the original pcap
-        :return: None - new pcap creation and print function
-        """
-        wrpcap(NEW_PCAP_NAME, fixed_pcap_list)
-        print("New File was created")
-        print(SEP)
-    """
-    def parse_pcap(self):
-        ret_val = False
-        try:
-            pkt_list = rdpcap(PCAP_NAME)
-            fixed_pcap_list = []
-            for pkt in pkt_list:
-                if Raw in pkt:
-                    packet_payload = pkt[Raw].load
-                    ret_val = self.check_pkt(packet_payload)
-                    if ret_val:
-                        fixed_pcap_list.append(pkt)
-            self.new_pcap_descriptor(fixed_pcap_list)
-            ret_val = True
-        except FileNotFoundError:
-            print(FILE_OPEN_ERROR)
-        return ret_val
-    """
     @staticmethod
     def receive_file(conn, file_name):
         """
