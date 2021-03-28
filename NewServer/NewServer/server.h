@@ -19,13 +19,15 @@
 #define INT8 "uint8_t"
 #define INT16 "uint16_t"
 #define SPACE " "
+#define PARAM_MAX_SIZE 255
 
 
 
 typedef struct field_view {
-	char *name;
-	char *size;
+	char name[PARAM_MAX_SIZE];
+	char size[PARAM_MAX_SIZE];
 	int letters;//number of hexa letters to check
+	char opcode[PARAM_MAX_SIZE];
 }field;
 
 
