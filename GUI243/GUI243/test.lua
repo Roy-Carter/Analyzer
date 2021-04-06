@@ -25,15 +25,15 @@ function func_add_payload(subtree,buffer,offset,p_type)
 	local payload_msg = "Payload"
 	
 	if p_type == 1 then
-		payloadSubtree = subtree:add(Roy_protocol,buffer(offset,2) , payload_msg)
-		payloadSubtree:add(roy_fields.my_data_req ,buffer(offset,2))
+		payloadSubtree = subtree:add(Roy_protocol , buffer(offset,2) , payload_msg)
+		payloadSubtree:add(roy_fields.my_data_req , buffer(offset,2))
 		offset = offset + 2
 	end
 	
 	if p_type == 2 then
-		payloadSubtree = subtree:add(Roy_protocol,buffer(offset,3) , payload_msg)
-		payloadSubtree:add(roy_fields.check_it ,buffer(offset,1))
-		payloadSubtree:add(roy_fields.my_data_res ,buffer(offset+1,2))
+		payloadSubtree = subtree:add(Roy_protocol, buffer(offset,3) , payload_msg)
+		payloadSubtree:add(roy_fields.check_it , buffer(offset,1))
+		payloadSubtree:add(roy_fields.my_data_res , buffer(offset+1,2))
 		offset = offset + 3
 	end
 	
@@ -71,5 +71,3 @@ function Roy_protocol.dissector(buffer,pinfo,tree)
 end
 
 func_add_ports()
-
-
