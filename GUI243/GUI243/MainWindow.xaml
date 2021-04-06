@@ -19,7 +19,13 @@
             x:Name="Main_Panel"
             Margin="150,101,0,0"
             Background="#8ecae6">
-            <TextBox x:Name="textBox1" />
+            <TextBox
+                x:Name="textBox1"
+                BorderThickness="5"
+                BorderBrush="#219ebc"
+                FontFamily="david"
+                FontSize="16"
+                Style="{StaticResource MaterialDesignTextBox}" TextChanged="TextBox1_TextChanged" />
         </Grid>
         <Grid
             x:Name="panelHeader"
@@ -41,7 +47,11 @@
             HorizontalAlignment="Left"
             Background="#4cc9f0">
             <StackPanel>
-                <Grid Height="150" Background="#4895ef" />
+                <Grid Height="150" Background="#4895ef">
+                    <TextBlock FontFamily="david" FontSize="16" FontStyle="Oblique" FontWeight="UltraBold"  x:Name="Upper_left"></TextBlock>
+                    
+                </Grid>
+
                 <ListView
                     Background="Transparent"
                     BorderBrush="Transparent"
