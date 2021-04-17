@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import sys
+from LuaHandler import *
 
 
 def add_counter_label(frame):
@@ -56,21 +57,31 @@ class ResultsDPI:
         check_pd = pd.merge(self.df_stest, self.df_results, on='ID')
         check_pd = check_pd[check_pd.num_class != 1]
         print(check_pd)
+
+        pd_with_id = check_pd.drop(["num_class", "p_type_y"], axis=1)
+
         check_pd_fix = check_pd.drop(["num_class", "p_type_y", "ID"], axis=1)
         check_pd_fix.rename(columns={'p_type_x': 'p_type'}, inplace=True)
         print(check_pd_fix)
         columns = check_pd_fix.columns.tolist()
         sys.stdout = open("Output/log.txt", "w")
-        for index, row in check_pd_fix.iterrows():
+        incorrect_packets = open("Output/p_names.txt", "w")
+        for index, row in pd_with_id.iterrows():
             lst = row.tolist()
             print("-------------------------------------------")
+            print(f"(Packet Number  {row['ID'] + 1})")
+            incorrect_packets.write("Packet " + str(row['ID'] + 1) + "\n")
+            incorrect_packets.write("\n")
             print(lst)
+
             for i in range(len(self.min_max) - 1):  # -1 so it won't run on the class
+
                 if lst[i] < self.min_max[i][0]:
-                    print(f"Lower than {self.min_max[i][0]} in {columns[i]}")
+                    print(f" Lower than {self.min_max[i][0]} in {columns[i]} ")
                 elif lst[i] > self.min_max[i][1]:
-                    print(f"Higher than {self.min_max[i][1]} in {columns[i]}")
+                    print(f" Higher than {self.min_max[i][1]} in {columns[i]} ")
         sys.stdout.close()
+        incorrect_packets.close()
 
     def initialize(self):
         self.stage2()
