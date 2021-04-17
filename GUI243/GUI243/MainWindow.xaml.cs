@@ -1,22 +1,31 @@
 ﻿using System;
 using System.IO;
 using System.Windows;
+using System.Windows.Media;
 using ServerOn;
 
 namespace GUI243
 {
     public partial class MainWindow : Window
     {
+
         public MainWindow()
         {
-            Server server = new Server();
+           
             InitializeComponent();
+            textBox1.IsReadOnly = true;
+            Logger.IsReadOnly = true;
+            textBox1.Foreground = Brushes.White;
+           // Logger.Foreground = Brushes.White;
+
         }
+
 
         private void Start_Click(object sender, RoutedEventArgs e)
         {
-            string full_path = Server.ExecuteServer();
-            textBox1.Text = File.ReadAllText(full_path);
+            string[] paths = Server.ExecuteServer();
+            textBox1.Text = File.ReadAllText(paths[0]);
+            Logger.Text = File.ReadAllText(paths[1]);
 
         }
 
@@ -31,7 +40,7 @@ namespace GUI243
                 var fullPath = dialog.FileName;
                 var fileOnlyName = Path.GetFileName(fullPath);
                 File.Copy(fullPath, Path.Combine(newDestination, fileOnlyName));
-                MessageBox.Show("File uploaded!");
+                //Upper_left.Text = "File Uploaded!";
             }
         }
 
