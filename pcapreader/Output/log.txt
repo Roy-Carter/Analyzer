@@ -37,7 +37,7 @@
  Lower than 2 in check_it 
 -------------------------------------------
 (Packet Number  10)
-[64, 73, 66, 0, 0, 0, 9]
+[66, 64, 73, 0, 0, 0, 9]
  Higher than 2 in p_type 
  Higher than 4 in flag 
  Higher than 6 in seq 
@@ -46,7 +46,7 @@
  Lower than 2 in check_it 
 -------------------------------------------
 (Packet Number  11)
-[64, 66, 73, 0, 0, 0, 10]
+[66, 64, 73, 0, 0, 0, 10]
  Higher than 2 in p_type 
  Higher than 4 in flag 
  Higher than 6 in seq 
@@ -55,30 +55,28 @@
  Lower than 2 in check_it 
 -------------------------------------------
 (Packet Number  14)
-[66, 64, 73, 0, 0, 0, 13]
- Higher than 2 in p_type 
+[1, 5, 4, 504, 0, 0, 13]
  Higher than 4 in flag 
- Higher than 6 in seq 
+ Higher than 103 in my_data_req 
+ Lower than 203 in my_data_res 
+ Lower than 2 in check_it 
+-------------------------------------------
+(Packet Number  15)
+[2, 1, 3, 0, 101, 0, 14]
+ Lower than 2 in flag 
  Lower than 101 in my_data_req 
  Lower than 203 in my_data_res 
  Lower than 2 in check_it 
 -------------------------------------------
 (Packet Number  16)
-[1, 5, 4, 504, 0, 0, 15]
- Higher than 4 in flag 
- Higher than 103 in my_data_req 
- Lower than 203 in my_data_res 
- Lower than 2 in check_it 
--------------------------------------------
-(Packet Number  17)
-[2, 1, 3, 0, 101, 0, 16]
+[2, 1, 3, 0, 101, 0, 15]
  Lower than 2 in flag 
  Lower than 101 in my_data_req 
  Lower than 203 in my_data_res 
  Lower than 2 in check_it 
 -------------------------------------------
-(Packet Number  18)
-[70, 73, 64, 0, 0, 0, 17]
+(Packet Number  17)
+[61, 64, 73, 0, 0, 0, 16]
  Higher than 2 in p_type 
  Higher than 4 in flag 
  Higher than 6 in seq 
@@ -86,22 +84,17 @@
  Lower than 203 in my_data_res 
  Lower than 2 in check_it 
 -------------------------------------------
-(Packet Number  21)
-[1, 5, 4, 504, 0, 0, 20]
+(Packet Number  18)
+[73, 64, 61, 0, 0, 0, 17]
+ Higher than 2 in p_type 
  Higher than 4 in flag 
- Higher than 103 in my_data_req 
- Lower than 203 in my_data_res 
- Lower than 2 in check_it 
--------------------------------------------
-(Packet Number  22)
-[2, 1, 3, 0, 101, 0, 21]
- Lower than 2 in flag 
+ Higher than 6 in seq 
  Lower than 101 in my_data_req 
  Lower than 203 in my_data_res 
  Lower than 2 in check_it 
 -------------------------------------------
 (Packet Number  23)
-[61, 64, 73, 0, 0, 0, 22]
+[73, 64, 66, 0, 0, 0, 22]
  Higher than 2 in p_type 
  Higher than 4 in flag 
  Higher than 6 in seq 
@@ -110,23 +103,23 @@
  Lower than 2 in check_it 
 -------------------------------------------
 (Packet Number  24)
-[2, 1, 3, 0, 101, 0, 23]
- Lower than 2 in flag 
+[64, 73, 66, 0, 0, 0, 23]
+ Higher than 2 in p_type 
+ Higher than 4 in flag 
+ Higher than 6 in seq 
  Lower than 101 in my_data_req 
  Lower than 203 in my_data_res 
  Lower than 2 in check_it 
 -------------------------------------------
 (Packet Number  25)
-[70, 35, 0, 0, 0, 0, 24]
- Higher than 2 in p_type 
+[1, 5, 4, 504, 0, 0, 24]
  Higher than 4 in flag 
- Lower than 3 in seq 
- Lower than 101 in my_data_req 
+ Higher than 103 in my_data_req 
  Lower than 203 in my_data_res 
  Lower than 2 in check_it 
 -------------------------------------------
 (Packet Number  26)
-[66, 64, 73, 0, 0, 0, 25]
+[64, 66, 73, 0, 0, 0, 25]
  Higher than 2 in p_type 
  Higher than 4 in flag 
  Higher than 6 in seq 
@@ -142,17 +135,17 @@
  Lower than 2 in check_it 
 -------------------------------------------
 (Packet Number  30)
-[2, 1, 3, 0, 101, 0, 29]
- Lower than 2 in flag 
+[33, 70, 31, 0, 0, 0, 29]
+ Higher than 2 in p_type 
+ Higher than 4 in flag 
+ Higher than 6 in seq 
  Lower than 101 in my_data_req 
  Lower than 203 in my_data_res 
  Lower than 2 in check_it 
 -------------------------------------------
-(Packet Number  31)
-[70, 35, 0, 0, 0, 0, 30]
- Higher than 2 in p_type 
+(Packet Number  32)
+[1, 5, 4, 504, 0, 0, 31]
  Higher than 4 in flag 
- Lower than 3 in seq 
- Lower than 101 in my_data_req 
+ Higher than 103 in my_data_req 
  Lower than 203 in my_data_res 
  Lower than 2 in check_it 
