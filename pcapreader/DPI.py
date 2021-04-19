@@ -23,6 +23,44 @@ class ResultsDPI:
         self.df_stest = pd.read_csv("CsvFiles/Attributes.csv") #the received to check file
         self.df_results = pd.read_csv("CsvFiles/Results.csv")
         self.min_max = []
+        self.interception_data = [] # for the values in the min-max who aren't actually in the learning stage
+
+
+    def value_range_exists(self, series, min_value, max_value):
+        """
+        Function purpose is to find out which values of my basic min-max range
+        are not actually in a corrected packet data
+        :param series: a column from the dataframe
+        :param min_value: min value of a specific column
+        :param max_value: max value of a specific column
+        :return: a list of all the values that were expected to be in a correct data but are not
+        for example :
+        unique [101,102,103,105]
+        expected [101,102,103,104,105]
+        not_in_range [104]
+        """
+        current_values = series.unique()
+        expected_values = list(range(min_value, max_value + 1))
+        # i want all the values of expected that are not in current
+        not_in_range = np.setdiff1d(expected_values, current_values)
+        print(f"unique : {current_values} \n expected : {expected_values} \n not_in_range : {not_in_range}")
+        print("===========================================================================================")
+        return not_in_range
+
+    def prepare_unique_data(self, normal):
+        """
+        :param normal: normalized dataframe containing only packets from code 1 (means not anomalies)
+        :return: None , updates self.interception_data and creates from it a list of lists for the
+        values that were counted in the range but actually aren't part of it .
+        """
+        i = 0
+        for (column_name, column_data) in normal.iteritems():
+            min = self.min_max[i][0]
+            max = self.min_max[i][1]
+            print('Colunm Name : ', column_name)
+            not_in_range_col = self.value_range_exists(normal[column_name], min, max)
+            self.interception_data.append(not_in_range_col)
+            i += 1
 
     def stage2(self):
         """ STAGE 2 - MIN <-> MAX [[min,max],[min,max]....,[min,max]] """
@@ -36,6 +74,7 @@ class ResultsDPI:
         print("STAGE 2")
         self.min_max = list(self.min_max)
         print(self.min_max)
+        self.prepare_unique_data(normal)
 
     def stage3(self):
         """ STAGE 3 - adding ID column to the test and result panda frames """
@@ -75,8 +114,10 @@ class ResultsDPI:
             print(lst)
 
             for i in range(len(self.min_max) - 1):  # -1 so it won't run on the class
-
-                if lst[i] < self.min_max[i][0]:
+                # it might be in the min-max range but not a correct data to put!
+                if lst[i] in self.interception_data[i]:
+                    print(f"Is in the range but is not a correct data packet in {columns[i]} ")
+                elif lst[i] < self.min_max[i][0]:
                     print(f" Lower than {self.min_max[i][0]} in {columns[i]} ")
                 elif lst[i] > self.min_max[i][1]:
                     print(f" Higher than {self.min_max[i][1]} in {columns[i]} ")
