@@ -1,6 +1,6 @@
 # Protocol Analyzer
 ## Written in C + LUA + Python
-
+## Change the path of the files in GUI because its based on local files
 #### :shipit: Analyzer is a project made to detect and analyse a specifc protocol in a pcap file . :shipit:
 
 
