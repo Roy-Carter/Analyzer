@@ -5,24 +5,23 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Windows;
-using GUI243;
-
-namespace ServerOn
+namespace GUI243
 {
     class Server
     {
 
-        public static string[] ExecuteServer()
+        public static string[] ExecuteServer(string[] fileNames)
         {
             IPEndPoint ipPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5555);//switch the port
             Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             listenSocket.Bind(ipPoint);
             listenSocket.Listen(1);
 
-            //MessageBox.Show("Waiting connection ... ");
             Socket clientSocket = listenSocket.Accept();
-
-            SendFile(clientSocket, "test.lua");
+            for (int i = 0; i < fileNames.Length; i++)//1
+            {
+                SendFile(clientSocket, fileNames[i]);
+            }
             clientSocket.Shutdown(SocketShutdown.Both);
             clientSocket.Close();
 
@@ -99,65 +98,52 @@ namespace ServerOn
                 return fullPath;
             }
         }
-
-        //public static string ReceiveFile(Socket clientSocket, byte[] buffer) // need to check about the retval thingy , not fully okay
-        //{
-        //    string data = null;
-        //    int numByte;
-        //    string folder = @"C:\Users\Roy\Desktop\GUI243\GUI243\";
-        //    byte[] name = new Byte[8];
-
-        //    numByte = clientSocket.Receive(name);
-        //    string fileName = Encoding.ASCII.GetString(name, 0, 7);
-        //   // MessageBox.Show(fileName);
-        //    string fullPath = folder + fileName;
-        //    do
-        //    {
-        //        numByte = clientSocket.Receive(buffer);
-        //        if (numByte > 0)
-        //        {
-        //            data += Encoding.ASCII.GetString(buffer, 0, numByte); // check about +=
-
-        //            File.WriteAllText(fullPath, data);
-        //        }
-        //    } while (numByte > 0);
-        //    return fullPath;
-
-        //}
         public static void SendFile(Socket clientSocket, string fileName)
         {//add try /catch
             string folder = @"C:\Users\Roy\Desktop\Analyzer\GUI243\GUI243\";
             string fullPath = folder + fileName;
-            FileInfo fi = new FileInfo(fullPath);
-            long file_size = fi.Length;
-            byte[] preBuffer;
-            using (var memoryStream = new MemoryStream())
+            if (File.Exists(fullPath))
             {
-                using (BinaryWriter writer = new BinaryWriter(memoryStream))
+                FileInfo fi = new FileInfo(fullPath);
+                long file_size = fi.Length;
+                byte[] preBuffer;
+                using (var memoryStream = new MemoryStream())
                 {
-                    writer.Write(file_size);
-                    //MessageBox.Show(file_size.ToString());
+                    using (BinaryWriter writer = new BinaryWriter(memoryStream))
+                    {
+                        writer.Write(file_size);
+                    }
+
+                    preBuffer = memoryStream.ToArray();
+                    byte[] fixedBuffer = new byte[4];
+                    Array.Copy(preBuffer, 0, fixedBuffer, 0, 4);
+                    Console.WriteLine(BitConverter.ToString(preBuffer));
+                    Console.WriteLine(BitConverter.ToString(fixedBuffer)); //fixing the problem i had with the converting to array that it added 4 useless zeros.
+                    clientSocket.Send(fixedBuffer); // sending size
+
                 }
-                preBuffer = memoryStream.ToArray();
-            }
-            clientSocket.Send(preBuffer); // sending size
-            byte[] data = new Byte[4096];
+                byte[] data = new Byte[4096];
 
-            using (FileStream fs = new FileStream(fullPath, FileMode.Open))
-            {
-                int actualRead;
-                do
+                using (FileStream fs = new FileStream(fullPath, FileMode.Open))
                 {
-                    actualRead = fs.Read(data, 0, data.Length);
-                    // MessageBox.Show(actualRead.ToString());
-                    clientSocket.Send(data);
-                    file_size -= actualRead;
-                } while (file_size > 0);
+                    clientSocket.Send(Encoding.ASCII.GetBytes("12345678")); // bug in file transfer needs to add 8 bytes so it won't add / delete anything
+                    int actualRead;
+                    do
+                    {
+                        actualRead = fs.Read(data, 0, data.Length);
+                        clientSocket.Send(data);
+                        file_size -= actualRead;
+                    } while (file_size - fileName.Length > 0);
+                }
             }
-            //MessageBox.Show("File has been sent!");
-        }
-    }
 
+            else
+            {
+                //MessageBox.Show("File for the program is missing! lua/pcap/csv");
+            }
+        }
+
+    }
 }
 
 

@@ -31,8 +31,9 @@
         </Rectangle>
         <Grid x:Name="Main_Panel" Margin="150,101,0,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="40*" />
-                <ColumnDefinition Width="129*" />
+                <ColumnDefinition Width="266*" />
+                <ColumnDefinition Width="799*" />
+                <ColumnDefinition Width="59*" />
             </Grid.ColumnDefinitions>
 
             <TextBox
@@ -52,6 +53,7 @@
             <TextBox
                 x:Name="textBox1"
                 Grid.Column="1"
+                Grid.ColumnSpan="2"
                 Margin="0,0,0,-1"
                 Padding="33,0,50,50"
                 HorizontalAlignment="Stretch"
@@ -63,23 +65,44 @@
                 Foreground="White"
                 TextAlignment="Center" />
 
+
         </Grid>
         <Grid
             x:Name="panelHeader"
             Height="101"
             VerticalAlignment="Top"
             Background="#FF000040">
+
+
             <Rectangle
                 Width="263"
                 Height="62"
-                Margin="1001,0,0,0"
+                Margin="1011,39,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Top"
                 Fill="#7F050546" />
+            <materialDesign:PackIcon
+                Width="30"
+                Height="30"
+                Margin="0,59,70,0"
+                HorizontalAlignment="Right"
+                Foreground="White"
+                Kind="Refresh" />
+            <Button
+                x:Name="ResetButton"
+                Width="59"
+                Margin="0,59,11,10"
+                HorizontalAlignment="Right"
+                Click="ResetButton_Click"
+                Content="Reset"
+                FontWeight="Bold"
+                Foreground="White"
+                RenderTransformOrigin="0.808,0.49"
+                Style="{StaticResource MaterialDesignToolButton}" />
             <TextBlock
                 Width="104"
                 Height="17"
-                Margin="1141,10,0,0"
+                Margin="1142,17,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Top"
                 Foreground="White"
@@ -92,8 +115,13 @@
                 FontFamily="Century Gothic"
                 FontSize="30"
                 FontWeight="Bold"
-                Foreground="White"
-                Text="Analyzer" />
+                Foreground="White">
+                <Run Text="Protocol" />
+                <Run
+                    FontWeight="Bold"
+                    Foreground="#819FF7"
+                    Text="Analyzer" />
+            </TextBlock>
         </Grid>
         <Grid
             x:Name="sidePanel"
@@ -144,6 +172,7 @@
                                 materialDesign:RippleAssist.Feedback="Transparent"
                                 Click="Start_Click"
                                 Content="Start"
+                                FontWeight="Bold"
                                 Foreground="White"
                                 RenderTransformOrigin="0.447,0.281"
                                 Style="{StaticResource MaterialDesignToolButton}" />
@@ -174,6 +203,7 @@
                                 VerticalAlignment="Center"
                                 Click="UploadFile_Click"
                                 Content="Upload"
+                                FontWeight="Bold"
                                 Foreground="White"
                                 Style="{StaticResource MaterialDesignToolButton}" />
                         </StackPanel>
