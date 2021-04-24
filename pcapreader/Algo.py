@@ -6,15 +6,15 @@ from DPI import *
 
 class MLAlgorithm:
     """Class that represents the ML algorithm"""
-    def __init__(self):
-        pass
+    def __init__(self, lua_handler: LuaHandler):
+        self.lua_handler = lua_handler
 
     def start_algorithm(self):
         """Function to start running the train process and the output log afterwards"""
         test = pd.read_csv("CsvFiles/Attributes.csv")
         model = self.tree_train()
         self.test_classifier(model, test)
-        dpi_output = ResultsDPI()
+        dpi_output = ResultsDPI(self.lua_handler)
         dpi_output.initialize()
 
     def test_classifier(self, model, test):
