@@ -13,6 +13,7 @@ def print_dict(val):
     :param val: a dictionary to print
     :return: None.
     """
+    print("in")
     for key, value in val.items():
         print(key, ' : ', value)
 
@@ -80,6 +81,9 @@ class LuaHandler:
         except FileNotFoundError:
             print(FILE_OPEN_ERROR)
         return ret_val
+
+    def get_p(self):
+        return self.protocol_types_fields
 
     def convert_attributes_list(self):
         """

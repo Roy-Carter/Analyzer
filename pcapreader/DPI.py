@@ -18,13 +18,13 @@ def add_counter_label(frame):
 class ResultsDPI:
     """Class that represents the DPI checks"""
 
-    def __init__(self):
+    def __init__(self, lua_handler: LuaHandler):
+        self.lua_handler = lua_handler
         self.df_smalltrain = pd.read_csv("CsvFiles/AlgoTest.csv")
         self.df_stest = pd.read_csv("CsvFiles/Attributes.csv") #the received to check file
         self.df_results = pd.read_csv("CsvFiles/Results.csv")
         self.min_max = []
         self.interception_data = [] # for the values in the min-max who aren't actually in the learning stage
-
 
     def value_range_exists(self, series, min_value, max_value):
         """
@@ -112,17 +112,55 @@ class ResultsDPI:
             incorrect_packets.write("Packet " + str(row['ID'] + 1) + "\n")
             incorrect_packets.write("\n")
             print(lst)
-
-            for i in range(len(self.min_max) - 1):  # -1 so it won't run on the class
-                # it might be in the min-max range but not a correct data to put!
-                if lst[i] in self.interception_data[i]:
-                    print(f"Is in the range but is not a correct data packet in {columns[i]} ")
-                elif lst[i] < self.min_max[i][0]:
-                    print(f" Lower than {self.min_max[i][0]} in {columns[i]} ")
-                elif lst[i] > self.min_max[i][1]:
-                    print(f" Higher than {self.min_max[i][1]} in {columns[i]} ")
+            self.check_packet(lst, columns)
         sys.stdout.close()
         incorrect_packets.close()
+
+    def find_msg_type_data(self, opcode):
+        """
+        Function that is responsible for creating a list of all the attributes to check by an opcode
+        :param opcode: the decisive parameter for the protocol message types
+        :return: returns a list of all the fields that are apart of the message type (including the generic msg headers)
+        """
+        msg_type_data = []
+        for key, value_lst in (self.lua_handler.protocol_fields.items()):
+            # checking the opcode
+            if value_lst[2] == 0 or value_lst[2] == opcode:
+                # adding the name of the field
+                msg_type_data.append(value_lst[0])
+            else:
+                msg_type_data.append(" ")
+        return msg_type_data
+
+    def check_packet(self, lst, columns):
+        """
+        Function that is responsible for checking the packets using deep packet inspection.
+        and printing to a file the output for a specific packet
+        :param lst: the list that represents a packet data
+        :param columns: my dataframe columns list
+        :return: None , prints to a file
+        """
+        # if the decisive parameter is in the protocol types fields
+        protocol_types_fields = self.lua_handler.protocol_types_fields
+        if lst[0] != 0 and protocol_types_fields.get(lst[0]) is not None:
+            # connecting between 0 opcode - msgheader and the msgtypedata
+            msg_type_data = self.find_msg_type_data(lst[0])
+            #print(f"message data {msg_type_data}")
+            # goes over the protocol
+            for key, value_lst in (self.lua_handler.protocol_fields.items()):
+                # if the field is in my lst , check if the value fits the message type standards , else continue
+                if value_lst[0] in msg_type_data:
+                    if lst[key] in self.interception_data[key]:
+                        print(f"Value in {columns[key]} is in the correct range of values but is not defined as one! ")
+                    elif lst[key] < self.min_max[key][0]:
+                        print(f" Lower than {self.min_max[key][0]} in {columns[key]} ")
+                    elif lst[key] > self.min_max[key][1]:
+                        print(f" Higher than {self.min_max[key][1]} in {columns[key]} ")
+                else:
+                    continue
+        else:
+            print("Packet is not built for the protocol !")
+
 
     def initialize(self):
         self.stage2()

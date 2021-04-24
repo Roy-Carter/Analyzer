@@ -86,7 +86,7 @@ class Server:
         ret_val = lua_handler.read_lua()
         if ret_val:
             ret_val = lua_handler.parse_pcap()
-            algo = MLAlgorithm()
+            algo = MLAlgorithm(lua_handler)
             algo.start_algorithm()
         conn.close()
         return ret_val
