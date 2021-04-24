@@ -109,6 +109,14 @@
                 Text="@Roy Carter"
                 TextAlignment="Right"
                 TextWrapping="Wrap" />
+            <Ellipse
+             x:Name="ActiveCircle"
+            Width="25"
+            Height="25"
+            Fill="Red"
+            Margin="0,0,300,0"
+             />  
+
             <TextBlock
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"

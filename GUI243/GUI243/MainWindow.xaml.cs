@@ -1,7 +1,9 @@
 ﻿using System;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace GUI243
 {
@@ -9,6 +11,7 @@ namespace GUI243
     {
         public int filesCounter;
         public string[] uploadedFiles;
+        public static string folder = @"C:\Users\Roy\Desktop\Analyzer\GUI243\GUI243\";
         public MainWindow()
         {
             InitializeComponent();
@@ -18,10 +21,13 @@ namespace GUI243
             uploadedFiles = new string[3];
         }
 
-
-        private void Start_Click(object sender, RoutedEventArgs e)
+        
+        private async void Start_Click(object sender, RoutedEventArgs e)
         {
-            string[] paths = Server.ExecuteServer(uploadedFiles);
+            ActiveCircle.Fill = new System.Windows.Media.SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF04F794"));
+            await Task.Delay(2);
+            string[] paths;
+            paths = Server.ExecuteServer(uploadedFiles);
             textBox1.Text = File.ReadAllText(paths[0]);
             Logger.Text = File.ReadAllText(paths[1]);
 
@@ -30,7 +36,7 @@ namespace GUI243
         private void UploadFile_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new Microsoft.Win32.OpenFileDialog();
-            var newDestination = @"C:\Users\Roy\Desktop\Analyzer\GUI243\GUI243\";
+            var newDestination = folder;
             if (filesCounter < 3)
             {
                 if (dialog.ShowDialog() == true)
@@ -53,6 +59,10 @@ namespace GUI243
                     }
                 }
             }
+            else
+            {
+                MessageBox.Show("Can't upload more than 3 files (lua,pcap,csv)!");
+            }
         }
         private static void PrintFiles(string[] arr)
         {
@@ -67,11 +77,13 @@ namespace GUI243
 
         }
 
-        private void ResetButton_Click(object sender, RoutedEventArgs e)
+        private async void ResetButton_Click(object sender, RoutedEventArgs e)
         {
-            var directory = @"C:\Users\Roy\Desktop\Analyzer\GUI243\GUI243\";
+            var directory = folder;
             textBox1.Text = "";
             Logger.Text = "";
+            ActiveCircle.Fill = Brushes.Red;
+            await Task.Delay(2);
             for (int i = 0; i < uploadedFiles.Length; i++)
             {
 

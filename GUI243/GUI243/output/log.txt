@@ -1,0 +1,48 @@
+-------------------------------------------
+(Packet Number  3)
+[1, 5, 4, 504, 0, 0]
+ Higher than 4 in flag 
+ Higher than 103 in my_data_req 
+-------------------------------------------
+(Packet Number  4)
+[2, 1, 3, 0, 101, 0]
+ Lower than 2 in flag 
+ Lower than 203 in my_data_res 
+ Lower than 2 in check_it 
+-------------------------------------------
+(Packet Number  5)
+[70, 35, 0, 0, 0, 0]
+Packet is not built for the protocol !
+-------------------------------------------
+(Packet Number  6)
+[73, 64, 66, 0, 0, 0]
+Packet is not built for the protocol !
+-------------------------------------------
+(Packet Number  7)
+[73, 61, 64, 0, 0, 0]
+Packet is not built for the protocol !
+-------------------------------------------
+(Packet Number  10)
+[1, 5, 4, 504, 0, 0]
+ Higher than 4 in flag 
+ Higher than 103 in my_data_req 
+-------------------------------------------
+(Packet Number  11)
+[70, 0, 0, 0, 0, 0]
+Packet is not built for the protocol !
+-------------------------------------------
+(Packet Number  12)
+[34, 70, 0, 0, 0, 0]
+Packet is not built for the protocol !
+-------------------------------------------
+(Packet Number  13)
+[64, 66, 73, 0, 0, 0]
+Packet is not built for the protocol !
+-------------------------------------------
+(Packet Number  14)
+[64, 73, 66, 0, 0, 0]
+Packet is not built for the protocol !
+-------------------------------------------
+(Packet Number  15)
+[66, 64, 73, 0, 0, 0]
+Packet is not built for the protocol !
