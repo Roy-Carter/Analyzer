@@ -10,16 +10,18 @@ namespace GUI243
     class Server
     {
 
+        
         public static string[] ExecuteServer(string[] fileNames)
         {
             IPEndPoint ipPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5555);//switch the port
             Socket listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             listenSocket.Bind(ipPoint);
             listenSocket.Listen(1);
-
+            Console.WriteLine("open connection");
             Socket clientSocket = listenSocket.Accept();
-            for (int i = 0; i < fileNames.Length; i++)//1
+            for (int i = 0; i < 1; i++)//1
             {
+                Console.WriteLine("Sending..");
                 SendFile(clientSocket, fileNames[i]);
             }
             clientSocket.Shutdown(SocketShutdown.Both);
@@ -50,7 +52,7 @@ namespace GUI243
         }
         public static string ReceiveFile(TcpListener tcpListener)
         {
-            string folder = @"C:\Users\Roy\Desktop\Analyzer\GUI243\GUI243\";
+            string folder = @"C:\Users\Yanir\Desktop\Analyzer\GUI243\GUI243\output\";
             while (true)
             {
                 // Accept a TcpClient    
@@ -100,8 +102,7 @@ namespace GUI243
         }
         public static void SendFile(Socket clientSocket, string fileName)
         {//add try /catch
-            string folder = @"C:\Users\Roy\Desktop\Analyzer\GUI243\GUI243\";
-            string fullPath = folder + fileName;
+            string fullPath = MainWindow.folder + fileName;
             if (File.Exists(fullPath))
             {
                 FileInfo fi = new FileInfo(fullPath);
@@ -122,6 +123,7 @@ namespace GUI243
                     clientSocket.Send(fixedBuffer); // sending size
 
                 }
+
                 byte[] data = new Byte[4096];
 
                 using (FileStream fs = new FileStream(fullPath, FileMode.Open))
@@ -139,6 +141,7 @@ namespace GUI243
 
             else
             {
+                Console.WriteLine("doesn't exist..");
                 //MessageBox.Show("File for the program is missing! lua/pcap/csv");
             }
         }
