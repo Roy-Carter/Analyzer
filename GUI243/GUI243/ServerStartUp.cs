@@ -101,41 +101,30 @@ namespace GUI243
             }
         }
         public static void SendFile(Socket clientSocket, string fileName)
-        {//add try /catch
+        {
             string fullPath = MainWindow.folder + fileName;
             if (File.Exists(fullPath))
             {
                 FileInfo fi = new FileInfo(fullPath);
                 long file_size = fi.Length;
-                byte[] preBuffer;
-                using (var memoryStream = new MemoryStream())
-                {
-                    using (BinaryWriter writer = new BinaryWriter(memoryStream))
-                    {
-                        writer.Write(file_size);
-                    }
-
-                    preBuffer = memoryStream.ToArray();
-                    byte[] fixedBuffer = new byte[4];
-                    Array.Copy(preBuffer, 0, fixedBuffer, 0, 4);
-                    Console.WriteLine(BitConverter.ToString(preBuffer));
-                    Console.WriteLine(BitConverter.ToString(fixedBuffer)); //fixing the problem i had with the converting to array that it added 4 useless zeros.
-                    clientSocket.Send(fixedBuffer); // sending size
-
-                }
-
+                //Encoding.ASCII.GetBytes ,  Encoding.UTF8.GetBytes
+                byte[] bytesFileInfo = Encoding.ASCII.GetBytes(fi.Name + "|" + file_size + "\0"); // Writes the name and length overall size to the end of the file as nulls !
+                Console.WriteLine(bytesFileInfo.Length);
+                clientSocket.Send(bytesFileInfo);
+                
+                Console.WriteLine(file_size);
+                
                 byte[] data = new Byte[4096];
-
                 using (FileStream fs = new FileStream(fullPath, FileMode.Open))
                 {
-                    clientSocket.Send(Encoding.ASCII.GetBytes("12345678")); // bug in file transfer needs to add 8 bytes so it won't add / delete anything
                     int actualRead;
                     do
                     {
                         actualRead = fs.Read(data, 0, data.Length);
                         clientSocket.Send(data);
                         file_size -= actualRead;
-                    } while (file_size - fileName.Length > 0);
+                    } while (file_size - (fi.Name.Length + fi.Length) > 0);
+                    fs.Flush();
                 }
             }
 

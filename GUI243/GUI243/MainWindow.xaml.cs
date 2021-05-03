@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
+using ConnectionToSQL.Helper;
 
 namespace GUI243
 {
@@ -11,7 +12,9 @@ namespace GUI243
     {
         public int filesCounter;
         public string[] uploadedFiles;
-        public static string folder = @"C:\Users\Roy\Desktop\Analyzer\GUI243\GUI243\";
+        public string protocol_name;
+        public static string folder = @"C:\Users\Roy\Desktop\Analyzer\GUI243\GUI243\uploaded_files\";
+        public static string upload_folder = @"uploaded_files\";
         public MainWindow()
         {
             InitializeComponent();
@@ -21,7 +24,7 @@ namespace GUI243
             uploadedFiles = new string[3];
         }
 
-        
+
         private async void Start_Click(object sender, RoutedEventArgs e)
         {
             ActiveCircle.Fill = new System.Windows.Media.SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF04F794"));
@@ -44,18 +47,38 @@ namespace GUI243
 
                     var fullPath = dialog.FileName; // where its being taken from
                     var fileOnlyName = Path.GetFileName(fullPath);
-                    
+
                     if (!File.Exists(newDestination + fileOnlyName))
                     {
                         uploadedFiles[filesCounter] = fileOnlyName;
-                        filesCounter++;
                         File.Copy(fullPath, Path.Combine(newDestination, fileOnlyName));
+                        filesCounter++;
+                        string column_name;
+                        switch (filesCounter)
+                        {
+                            case 1:
+                                protocol_name = fileOnlyName.Split('.')[0];
+                                DBHelper.SaveProtocolName(protocol_name);
+                                column_name = " lua_name ";
+                                DBHelper.SaveFileToSql(newDestination + fileOnlyName, " lua_file ", column_name);
+                                break;
+                            case 2:
+                                column_name = " pcap_name ";
+                                DBHelper.SaveFileToSql(newDestination + fileOnlyName, " pcap_file ", column_name);
+                                break;
+                            case 3:
+                                column_name = " csv_name ";
+                                DBHelper.SaveFileToSql(newDestination + fileOnlyName, " csv_file ", column_name);
+                                break;
+
+                        }
+
                         PrintFiles(uploadedFiles);
                         MessageBox.Show(fileOnlyName + " has been uploaded!");
                     }
                     else
                     {
-                        MessageBox.Show(fileOnlyName +" is already in the system!");
+                        MessageBox.Show(fileOnlyName + " is already in the system!");
                     }
                 }
             }
