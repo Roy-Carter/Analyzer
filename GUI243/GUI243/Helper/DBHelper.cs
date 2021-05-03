@@ -40,57 +40,47 @@ namespace ConnectionToSQL.Helper
 
 
 
-
-        ////new to save paths
-        //public static void SaveFileToSql(string path, string column)
-        //{
-        //    try
-        //    {
-        //        FileInfo info = new FileInfo(path);
-        //        string physical_path = path; // check about physical address transformation
-        //        string physical_path_new = physical_path.Replace("\\", "\\\\"); // to fix the way the path is saved 
-        //        using (MySqlCommand command = new MySqlCommand())
-        //        {
-        //            command.Connection = connection;
-        //            command.CommandText = "update filesdb set" + column + "= @virtual_path where protocol_name ='" + p_name + "';";
-        //            command.Parameters.AddWithValue("@virtual_path", physical_path_new);
-        //            connection.Open();
-        //            command.ExecuteNonQuery();
-        //        }
-
-        //        Console.WriteLine("{0} Was successfully written to the DB!\n", path);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine(ex.Message);
-        //        Console.WriteLine("Failed in SaveFileToSql!");
-        //    }
-        //    finally
-        //    {
-        //        connection.Close();
-        //    }
-        //}
         public static void ReadFromDB()
         {
-            MySqlCommand myQuery = connection.CreateCommand();
-            myQuery.CommandText = @"select * from filesdb where protocol_name ='" + p_name + "';";
-            MySqlDataReader myReader;
-            connection.Open();
-            myReader = myQuery.ExecuteReader();
-            DataTable dataTable = new DataTable("DataTable");
-            dataTable.Load(myReader);
+           // try
+           // {
+                string cmd_str;
+                MySqlDataAdapter Da_Obj = new MySqlDataAdapter();
+                MySqlCommand Cm_Obj = new MySqlCommand();
+                DataSet FilesDB = new DataSet();
 
-            Console.WriteLine(dataTable.Rows.Count);
-            foreach (DataRow dataRow in dataTable.Rows)
-            {
-                foreach (var item in dataRow.ItemArray)
+                cmd_str = "SELECT lua_name,lua_file FROM filesdb WHERE protocol_name = 'roy';";
+                Da_Obj = new MySqlDataAdapter(cmd_str, connection);
+                connection.Open();
+                Da_Obj.Fill(FilesDB, "filesdb");
+
+                Cm_Obj = new MySqlCommand(cmd_str, connection);
+                MySqlDataReader reader = Cm_Obj.ExecuteReader();
+                if (reader.Read() && reader != null)
                 {
-                    Console.WriteLine(item);
+                    Byte[] bytes;
+                    bytes = Encoding.UTF8.GetBytes(String.Empty);
+                    bytes = (Byte[])reader["lua_file"];
+                    FileStream fs = new FileStream(MainWindow.output_folder + FilesDB.Tables["filesdb"].Rows[0]["lua_name"].ToString(),
+                        FileMode.OpenOrCreate);
+                    fs.Write(bytes, 0, bytes.Length);
+                    fs.Close();
+                    Console.WriteLine("Download Completed!");
                 }
-            }
-
+          //  }
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine(ex.Message);
+            //    Console.WriteLine("Failed in ReadFromDB!");
+            //}
+            //finally
+            //{
+            //    connection.Close();
+            //}
         }
-        //public static  PrepareFileData
+
+
+
 
         public static void SaveFileToSql(string path, string column, string column_name)
         {
@@ -100,15 +90,7 @@ namespace ConnectionToSQL.Helper
             using (MySqlCommand command = new MySqlCommand())
             {
                 command.Connection = connection;
-                //command.CommandText = "INSERT INTO filesdb" + column + "VALUES (?fileName);";
-                // command.CommandText = "update filesdb set lua_file = 'roy2.lua' where protocol_name = 'roy';";
                 command.CommandText = "update filesdb set" + column + "= @file ," + column_name + "=@file_name  where protocol_name = @protocol_name;";
-                //MySqlParameter blobName = new MySqlParameter("?fileName", MySqlDbType.String);
-                //MySqlParameter blobData = new MySqlParameter("?rawData", MySqlDbType.Blob, rawData.Length);
-                //blobData.Value = rawData;
-                //blobName.Value = info.Name;
-                //command.Parameters.Add(blobData);
-                //command.Parameters.Add(blobName);
 
                 command.Parameters.AddWithValue("@file", rawData);
                 command.Parameters.AddWithValue("@file_name", info.Name);
